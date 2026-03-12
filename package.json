@@ -1,0 +1,12 @@
+{
+  "name": "energy-blog",
+  "private": true,
+  "scripts": {
+    "build": "observable build",
+    "dev": "observable preview",
+    "clean": "observable clean"
+  },
+  "dependencies": {
+    "@observablehq/framework": "^1.13.0"
+  }
+}
