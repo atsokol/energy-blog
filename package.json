@@ -1,6 +1,7 @@
 {
   "name": "energy-blog",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "observable build",
     "dev": "observable preview",

@@ -47,22 +47,22 @@ In this environment, flexibility becomes crucial. Energy storage can shift power
 The figure below illustrates the **day-ahead market (DAM) arbitrage** using the **TB4 (top-4 / bottom-4)** measure. TB4 is calculated as the difference between the average price of the four most expensive hours (typically the evening peak) and the average price of the four cheapest hours (often at night or mid-day), capturing the price spread.
 
 ```js
-viewof selectedDate = Inputs.date({label: "Select date", value: lastDayPrevMonth})
+const selectedDate = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
 ```
 
 ```js
-viewof selectedCountry = Inputs.select(
+const selectedCountry = view(Inputs.select(
   ["UA", "HU", "PL", "RO", "SK"],
   {label: "Select country", value: "UA", format: x => countries.get(x)}
-)
+))
 ```
 
 ```js
-viewof storageDuration = Inputs.range([2, 8], {label: "Storage duration, hours", step: 2, value: 4})
+const storageDuration = view(Inputs.range([2, 8], {label: "Storage duration, hours", step: 2, value: 4}))
 ```
 
 ```js
-{
+dam_arbitrage_chart = {
   const sorted = [...hourly_prices_for_date].sort((a, b) => a.price_dam - b.price_dam);
   const bottom = sorted.slice(0, storageDuration);
   const bottom_avg = d3.mean(bottom.map(d => d.price_dam));
@@ -120,11 +120,11 @@ viewof storageDuration = Inputs.range([2, 8], {label: "Storage duration, hours",
 The next figure shows the evolution of TB4 measure for Ukraine's day-ahead market over time. Each dot represents the daily price spread, while the moving average highlights the trend in arbitrage opportunities on the day-ahead market.
 
 ```js
-viewof startDate = Inputs.date({label: "Select start date", value: "2024-01-01"})
+const startDate = view(Inputs.date({label: "Select start date", value: "2024-01-01"}))
 ```
 
 ```js
-{
+ua_arbitrage_chart = {
   const data_filt = arbitrage_revenues
     .filter(d => d.date >= new Date(startDate))
     .filter(d => d.country == "UA");
@@ -158,7 +158,7 @@ viewof startDate = Inputs.date({label: "Select start date", value: "2024-01-01"}
 Comparing Ukraine against neighbouring EU markets highlights shared regional drivers. However, from H2 2025 a clear divergence emerges: Ukraine's spreads rise sharply, exceeding EUR 200/MWh/day, while neighbouring EU markets remain within a lower cyclical range.
 
 ```js
-viewof windowSize = Inputs.range([30, 90], {value: 60, step: 30, label: "Select moving average window (days)"})
+const windowSize = view(Inputs.range([30, 90], {value: 60, step: 30, label: "Select moving average window (days)"}))
 ```
 
 ```js
@@ -187,7 +187,7 @@ Plot.plot({
 One important feature of Ukraine's electricity market is the strong influence of regulated price caps. As the figure shows, market prices frequently hit both the upper and lower caps, especially during periods of system stress or oversupply. This means that observed prices are often constrained by regulation rather than pure supply–demand balance, and the true intrinsic value of storage is likely higher.
 
 ```js
-{
+prices_vs_caps_chart = {
   const price_day = aq.from(priceUA.filter(d => d.date >= new Date(startDate)))
     .groupby("date")
     .rollup({
@@ -239,7 +239,7 @@ One important feature of Ukraine's electricity market is the strong influence of
 The **balancing market (BM)** also presents arbitrage opportunities. The figure below shows volume-weighted price spreads between the day-ahead and balancing markets, separately for downward regulation (excess supply) and upward regulation (supply deficit). It points to growing opportunities in the balancing market and cross-market arbitrage as an additional source of revenue, complementing the trading on the day-ahead markets.
 
 ```js
-{
+bm_spread_chart = {
   const regGen1 = d3reg.regressionLoess()
     .x(d => d.date)
     .y(d => d.spread)
@@ -282,11 +282,11 @@ The **balancing market (BM)** also presents arbitrage opportunities. The figure 
 One of the largest balancing needs today is associated with absorbing excess energy during periods of strong solar generation (mid-day) and low demand (night-time). Data shows that downward regulation volumes are higher and more concentrated than upward regulation pointing to a growing role of energy storage in absorbing surplus electricity during predictable oversupply windows, reducing curtailment and alleviating balancing pressure, while positioning storage to later discharge during deficit hours.
 
 ```js
-viewof selectYear = Inputs.checkbox(["2022", "2023", "2024", "2025"], {label: "Select years", value: ["2024", "2025"]})
+const selectYear = view(Inputs.checkbox(["2022", "2023", "2024", "2025"], {label: "Select years", value: ["2024", "2025"]}))
 ```
 
 ```js
-{
+bm_volumes_chart = {
   const spread_year = spread_BM_DAM_hourly.map(d => ({
     ...d,
     year: new Date(d.date).getFullYear().toString(),
@@ -340,7 +340,7 @@ lastDayPrevMonth = {
 ```
 
 ```js
-viewof bandwidth = Inputs.range([0, 0.3], {label: "Select smoothing bandwidth", step: 0.02, value: 0.1})
+const bandwidth = view(Inputs.range([0, 0.3], {label: "Select smoothing bandwidth", step: 0.02, value: 0.1}))
 ```
 
 ```js
@@ -364,7 +364,7 @@ arbitrage_revenues = {
     .groupby("country")
     .orderby("country", "date")
     .derive({
-      ma: aq.rolling(aq.op.mean("value"), [-(windowSize - 1), 0]),
+      ma: aq.rolling(op.mean("value"), [-(windowSize - 1), 0]),
     })
     .objects();
 }
@@ -481,8 +481,7 @@ import {aq, op} from "npm:arquero"
 ```
 
 ```js
-// d3-regression: replaces require("d3-regression@1.3.4") from the original notebook
-import * as d3reg from "npm:d3-regression@1.3.4"
+import * as d3reg from "npm:d3-regression"
 ```
 
 ```js

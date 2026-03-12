@@ -1,4 +1,5 @@
 export default {
+  root: "src",
   title: "Energy Analysis",
   pages: [
     {name: "Economics of energy storage", path: "/storage"},

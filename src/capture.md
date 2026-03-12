@@ -9,10 +9,10 @@ Electricity is traded in short time blocks, typically hourly or 15-minute interv
 To compare across such volatile prices, analysts often reference the **baseload price** — the average day-ahead price across all intervals in a day. It serves as a benchmark for what a generator running continuously would earn.
 
 ```js
-viewof selectCountries = Inputs.checkbox(
+const selectCountries = view(Inputs.checkbox(
   [...countries.keys()],
   {label: "Select countries to show", value: [...countries.keys()]}
-)
+))
 ```
 
 ```js
@@ -177,7 +177,7 @@ Plot.plot({
 ```
 
 ```js
-{
+price_cap_chart = {
   const dates = ["2022-02-28", "2023-07-01"];
   const caps = price_cap
     .filter(d => system.includes(d.energy_system))
@@ -266,7 +266,7 @@ capture_seas = capture_monthly.map(d => ({
 ```
 
 ```js
-viewof bw1 = Inputs.range([0, 1], {label: "Select smoothing bandwidth", step: 0.05, value: 0.6})
+const bw1 = view(Inputs.range([0, 1], {label: "Select smoothing bandwidth", step: 0.05, value: 0.6}))
 ```
 
 ```js
@@ -312,7 +312,7 @@ capture_seas_smooth = {
 #### Electricity price data
 
 ```js
-viewof bw2 = Inputs.range([0, 1], {label: "Select smoothing bandwidth", step: 0.05, value: 0.2})
+const bw2 = view(Inputs.range([0, 1], {label: "Select smoothing bandwidth", step: 0.05, value: 0.2}))
 ```
 
 ```js
@@ -463,7 +463,7 @@ price_cap = d3.csv(
 #### Import libraries
 
 ```js
-import * as d3reg from "npm:d3-regression@1.3.4"
+import * as d3reg from "npm:d3-regression"
 ```
 
 ```js
