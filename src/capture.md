@@ -177,7 +177,7 @@ Plot.plot({
 ```
 
 ```js
-price_cap_chart = {
+(() => {
   const dates = ["2022-02-28", "2023-07-01"];
   const caps = price_cap
     .filter(d => system.includes(d.energy_system))
@@ -227,7 +227,7 @@ price_cap_chart = {
       Plot.ruleY([0]),
     ],
   });
-}
+})()
 ```
 
 This notebook updates automatically based on the most recently available data. Data and code are available on [GitHub](https://github.com/atsokol/res-yield-data).
@@ -237,28 +237,28 @@ This notebook updates automatically based on the most recently available data. D
 ## Annex: calculations
 
 ```js
-system = ["ОЕС України", "ОЕС України (синхронізована з ENTSO-E)"]
+const system = ["ОЕС України", "ОЕС України (синхронізована з ENTSO-E)"]
 ```
 
 #### Wind and solar price capture
 
 ```js
 // Processed capture factors — from data_output/
-capture_daily = d3.csv(
+const capture_daily = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_output/capture_factors_daily.csv",
   d3.autoType
 ).then(data => data.filter(d => d.country !== "NA"))
 ```
 
 ```js
-capture_monthly = d3.csv(
+const capture_monthly = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_output/capture_factors_monthly.csv",
   d3.autoType
 ).then(data => data.filter(d => d.country !== "NA"))
 ```
 
 ```js
-capture_seas = capture_monthly.map(d => ({
+const capture_seas = capture_monthly.map(d => ({
   ...d,
   month: d.date.getUTCMonth(),
   year: d.date.getFullYear().toString(),
@@ -270,14 +270,14 @@ const bw1 = view(Inputs.range([0, 1], {label: "Select smoothing bandwidth", step
 ```
 
 ```js
-regGen1 = d3reg.regressionLoess()
+const regGen1 = d3reg.regressionLoess()
   .x(d => d.date)
   .y(d => d.cap_factor)
   .bandwidth(bw1)
 ```
 
 ```js
-capture_monthly_smooth = {
+const capture_monthly_smooth = (() => {
   const grouped = d3.group(capture_monthly, d => d.country, d => d.tech);
   return Array.from(grouped, ([country, techMap]) =>
     Array.from(techMap, ([tech, rows]) => {
@@ -285,18 +285,18 @@ capture_monthly_smooth = {
       return regGen1(rows).map(([x, y]) => ({date: x, value: y, country, tech}));
     })
   ).flat(2);
-}
+})()
 ```
 
 ```js
-regGen2 = d3reg.regressionLoess()
+const regGen2 = d3reg.regressionLoess()
   .x(d => d.month)
   .y(d => d.cap_factor)
   .bandwidth(bw1)
 ```
 
 ```js
-capture_seas_smooth = {
+const capture_seas_smooth = (() => {
   const grouped = d3.group(capture_seas, d => d.country, d => d.tech, d => d.year);
   return Array.from(grouped, ([country, techMap]) =>
     Array.from(techMap, ([tech, yearMap]) =>
@@ -306,7 +306,7 @@ capture_seas_smooth = {
       })
     )
   ).flat(3);
-}
+})()
 ```
 
 #### Electricity price data
@@ -316,24 +316,24 @@ const bw2 = view(Inputs.range([0, 1], {label: "Select smoothing bandwidth", step
 ```
 
 ```js
-regGen3 = d3reg.regressionLoess()
+const regGen3 = d3reg.regressionLoess()
   .x(d => d.date)
   .y(d => d.price)
   .bandwidth(bw2)
 ```
 
 ```js
-baseload_smooth = {
+const baseload_smooth = (() => {
   const grouped = d3.group(daily_baseload, d => d.country);
   return Array.from(grouped, ([country, rows]) => {
     rows.sort((a, b) => d3.ascending(a.x, b.x));
     return regGen3(rows).map(([x, y]) => ({date: new Date(x), price: y, country}));
   }).flat();
-}
+})()
 ```
 
 ```js
-monthly_baseload = d3.flatRollup(
+const monthly_baseload = d3.flatRollup(
   daily_baseload.map(d => ({
     ...d,
     month: new Date(Date.UTC(d.date.getFullYear(), d.date.getUTCMonth(), 1)),
@@ -345,7 +345,7 @@ monthly_baseload = d3.flatRollup(
 ```
 
 ```js
-daily_baseload = {
+const daily_baseload = (() => {
   const result = d3.rollup(
     prices_hourly,
     v => d3.mean(v, d => d.price_eur),
@@ -355,11 +355,11 @@ daily_baseload = {
   return Array.from(result, ([country, dateMap]) =>
     Array.from(dateMap, ([date, price]) => ({country, date: new Date(date), price}))
   ).flat();
-}
+})()
 ```
 
 ```js
-prices_relative = {
+const prices_relative = (() => {
   const data = prices_hourly.map(d => ({
     ...d,
     year: new Date(d.date).getFullYear().toString(),
@@ -391,11 +391,11 @@ prices_relative = {
       Array.from(hourMap, ([hour, price]) => ({country, year, hour, price}))
     )
   ).flat(2);
-}
+})()
 ```
 
 ```js
-prices_hourly = [
+const prices_hourly = [
   ...priceUA.map(d => ({
     country: d.country,
     date: d.hour.toISOString().split("T")[0],
@@ -415,7 +415,7 @@ prices_hourly = [
 
 ```js
 // Raw yield data — from data_raw/
-wind_yield_UA = d3.csv(
+const wind_yield_UA = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/yield_wind_UA.csv",
   row => ({
     date: d3.utcParse("%Y-%m-%d")(row.date),
@@ -427,7 +427,7 @@ wind_yield_UA = d3.csv(
 ```
 
 ```js
-solar_yield_UA = d3.csv(
+const solar_yield_UA = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/yield_solar_UA.csv",
   row => ({
     date: d3.utcParse("%Y-%m-%d")(row.date),
@@ -440,21 +440,21 @@ solar_yield_UA = d3.csv(
 
 ```js
 // Raw DAM prices — from data_raw/
-priceUA = d3.csv(
+const priceUA = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_UA.csv",
   d3.autoType
 )
 ```
 
 ```js
-priceEU = d3.csv(
+const priceEU = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_EU.csv",
   d3.autoType
 )
 ```
 
 ```js
-price_cap = d3.csv(
+const price_cap = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/UA%20price%20caps.csv",
   d3.autoType
 )

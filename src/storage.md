@@ -62,7 +62,7 @@ const storageDuration = view(Inputs.range([2, 8], {label: "Storage duration, hou
 ```
 
 ```js
-dam_arbitrage_chart = {
+(() => {
   const sorted = [...hourly_prices_for_date].sort((a, b) => a.price_dam - b.price_dam);
   const bottom = sorted.slice(0, storageDuration);
   const bottom_avg = d3.mean(bottom.map(d => d.price_dam));
@@ -114,7 +114,7 @@ dam_arbitrage_chart = {
       }),
     ],
   });
-}
+})()
 ```
 
 The next figure shows the evolution of TB4 measure for Ukraine's day-ahead market over time. Each dot represents the daily price spread, while the moving average highlights the trend in arbitrage opportunities on the day-ahead market.
@@ -124,7 +124,7 @@ const startDate = view(Inputs.date({label: "Select start date", value: "2024-01-
 ```
 
 ```js
-ua_arbitrage_chart = {
+(() => {
   const data_filt = arbitrage_revenues
     .filter(d => d.date >= new Date(startDate))
     .filter(d => d.country == "UA");
@@ -152,7 +152,7 @@ ua_arbitrage_chart = {
       }),
     ],
   });
-}
+})()
 ```
 
 Comparing Ukraine against neighbouring EU markets highlights shared regional drivers. However, from H2 2025 a clear divergence emerges: Ukraine's spreads rise sharply, exceeding EUR 200/MWh/day, while neighbouring EU markets remain within a lower cyclical range.
@@ -187,7 +187,7 @@ Plot.plot({
 One important feature of Ukraine's electricity market is the strong influence of regulated price caps. As the figure shows, market prices frequently hit both the upper and lower caps, especially during periods of system stress or oversupply. This means that observed prices are often constrained by regulation rather than pure supply–demand balance, and the true intrinsic value of storage is likely higher.
 
 ```js
-prices_vs_caps_chart = {
+(() => {
   const price_day = aq.from(priceUA.filter(d => d.date >= new Date(startDate)))
     .groupby("date")
     .rollup({
@@ -233,13 +233,13 @@ prices_vs_caps_chart = {
       }),
     ],
   });
-}
+})()
 ```
 
 The **balancing market (BM)** also presents arbitrage opportunities. The figure below shows volume-weighted price spreads between the day-ahead and balancing markets, separately for downward regulation (excess supply) and upward regulation (supply deficit). It points to growing opportunities in the balancing market and cross-market arbitrage as an additional source of revenue, complementing the trading on the day-ahead markets.
 
 ```js
-bm_spread_chart = {
+(() => {
   const regGen1 = d3reg.regressionLoess()
     .x(d => d.date)
     .y(d => d.spread)
@@ -276,7 +276,7 @@ bm_spread_chart = {
       }),
     ],
   });
-}
+})()
 ```
 
 One of the largest balancing needs today is associated with absorbing excess energy during periods of strong solar generation (mid-day) and low demand (night-time). Data shows that downward regulation volumes are higher and more concentrated than upward regulation pointing to a growing role of energy storage in absorbing surplus electricity during predictable oversupply windows, reducing curtailment and alleviating balancing pressure, while positioning storage to later discharge during deficit hours.
@@ -286,7 +286,7 @@ const selectYear = view(Inputs.checkbox(["2022", "2023", "2024", "2025"], {label
 ```
 
 ```js
-bm_volumes_chart = {
+(() => {
   const spread_year = spread_BM_DAM_hourly.map(d => ({
     ...d,
     year: new Date(d.date).getFullYear().toString(),
@@ -319,7 +319,7 @@ bm_volumes_chart = {
       }),
     ],
   });
-}
+})()
 ```
 
 This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as indicators of economic opportunity for energy storage, rather than on project-specific revenues. Translating these spreads into bankable cashflows requires a dispatch model that incorporates state-of-charge constraints, round-trip efficiency, market participation rules, etc. The results should be interpreted as a directional assessment of how storage value in Ukraine has evolved relative to neighbouring markets, not as a project-level revenue forecast.
@@ -331,12 +331,12 @@ This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as 
 #### Aggregate and transform data
 
 ```js
-lastDayPrevMonth = {
+const lastDayPrevMonth = (() => {
   const today = new Date();
   return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0))
     .toISOString()
     .split("T")[0];
-}
+})()
 ```
 
 ```js
@@ -344,7 +344,7 @@ const bandwidth = view(Inputs.range([0, 0.3], {label: "Select smoothing bandwidt
 ```
 
 ```js
-arbitrage_revenues = {
+const arbitrage_revenues = (() => {
   let sorted = aq.from(prices_hourly_DAM)
     .params({storageDuration: storageDuration})
     .groupby("country", "date")
@@ -367,11 +367,11 @@ arbitrage_revenues = {
       ma: aq.rolling(op.mean("value"), [-(windowSize - 1), 0]),
     })
     .objects();
-}
+})()
 ```
 
 ```js
-hourly_prices_for_date = {
+const hourly_prices_for_date = (() => {
   const filtered = prices_hourly_DAM
     .filter(d =>
       d.date.getTime() === new Date(selectedDate).getTime() &&
@@ -384,11 +384,11 @@ hourly_prices_for_date = {
     filtered.push({...lastHour, hour: 24});
   }
   return filtered;
-}
+})()
 ```
 
 ```js
-spread_BM_DAM_hourly = aq.from(
+const spread_BM_DAM_hourly = aq.from(
   prices_hourly_BM.map(d => ({
     ...d,
     spread_eur: d.direction === "up"
@@ -399,7 +399,7 @@ spread_BM_DAM_hourly = aq.from(
 ```
 
 ```js
-spread_BM_DAM_daily = aq.from(spread_BM_DAM_hourly)
+const spread_BM_DAM_daily = aq.from(spread_BM_DAM_hourly)
   .groupby("date", "direction")
   .rollup({spread: d => op.sum(d.spread_eur * d.volume_bm) / op.sum(d.volume_bm)})
   .objects()
@@ -409,14 +409,14 @@ spread_BM_DAM_daily = aq.from(spread_BM_DAM_hourly)
 
 ```js
 // Raw DAM prices — from data_raw/
-priceUA = d3.csv(
+const priceUA = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_UA.csv",
   d3.autoType
 )
 ```
 
 ```js
-priceEU = d3.csv(
+const priceEU = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_EU.csv",
   d3.autoType
 )
@@ -424,14 +424,14 @@ priceEU = d3.csv(
 
 ```js
 // Balancing market — from data_raw/ (note: geo-blocked, updated locally)
-prices_hourly_BM = d3.csv(
+const prices_hourly_BM = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/BM_UA.csv",
   d3.autoType
 )
 ```
 
 ```js
-price_cap = d3.csv(
+const price_cap = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/UA%20price%20caps.csv",
   d3.autoType
 ).then(data =>
@@ -442,7 +442,7 @@ price_cap = d3.csv(
 ```
 
 ```js
-prices_hourly_DAM = [
+const prices_hourly_DAM = [
   ...priceUA.map(d => ({
     country: d.country,
     date: new Date(d.hour.toISOString().slice(0, 10)),
@@ -459,7 +459,7 @@ prices_hourly_DAM = [
 ```
 
 ```js
-prices_DAM_quantiles = aq.from(
+const prices_DAM_quantiles = aq.from(
   prices_hourly_DAM
     .filter(d => d.country === "UA")
     .map(d => ({...d, year: String(d.date.getFullYear())}))
@@ -477,7 +477,8 @@ prices_DAM_quantiles = aq.from(
 #### Import libraries
 
 ```js
-import {aq, op} from "npm:arquero"
+import * as aq from "npm:arquero"
+import {op} from "npm:arquero"
 ```
 
 ```js

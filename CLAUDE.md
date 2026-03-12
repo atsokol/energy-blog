@@ -48,6 +48,30 @@ src/
 - npm packages: `import * as thing from "npm:package@version"` (no `require()`)
 - Shared utilities live in `src/components/` and are imported as `import {x} from "./components/file.js"`
 - `d3`, `Plot`, `Inputs` are available as globals
+- All async data loads (`d3.csv(...)`) must use `await` so dependent cells receive an array, not a Promise
+
+### Block cells: Framework vs. notebook syntax
+
+Observable Framework `.md` files only recognise `const`/`let`/`var`, function, class, and import declarations as cell **outputs**. The classic notebook block-cell syntax `name = { ... return x; }` is silently ignored — the code runs but produces no output and nothing is displayed.
+
+**Always use these patterns instead:**
+
+| Intent | Correct syntax |
+|---|---|
+| Named cell (used by other cells) | `const name = (() => { ...; return value; })()` |
+| Display-only cell (renders a chart) | `(() => { ...; return Plot.plot({...}); })()` |
+
+### Arquero import
+
+Arquero v8 does **not** export a named `aq` symbol. `import {aq, op} from "npm:arquero"` gives `aq = undefined`.
+
+Always import arquero as:
+```js
+import * as aq from "npm:arquero"
+import {op} from "npm:arquero"
+```
+
+`op` is a valid named export; `aq` must be a namespace import.
 
 ## Local dev
 
