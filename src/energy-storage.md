@@ -13,7 +13,7 @@ Plot.plot({
   caption: "Market Operator JSC",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: { line: true, label: "hour of day" },
   y: { nice: true, grid: true, label: "EUR / MWh" },
@@ -62,59 +62,59 @@ const storageDuration = view(Inputs.range([2, 8], {label: "Storage duration, hou
 ```
 
 ```js
-(() => {
-  const sorted = [...hourly_prices_for_date].sort((a, b) => a.price_dam - b.price_dam);
-  const bottom = sorted.slice(0, storageDuration);
-  const bottom_avg = d3.mean(bottom.map(d => d.price_dam));
-  const top = sorted.slice(-storageDuration);
-  const top_avg = d3.mean(top.map(d => d.price_dam));
+const dam_sorted = [...hourly_prices_for_date].sort((a, b) => a.price_dam - b.price_dam)
+const dam_bottom = dam_sorted.slice(0, storageDuration)
+const dam_bottom_avg = d3.mean(dam_bottom, d => d.price_dam)
+const dam_top = dam_sorted.slice(-storageDuration)
+const dam_top_avg = d3.mean(dam_top, d => d.price_dam)
+```
 
-  return Plot.plot({
-    title: `Illustration of arbitrage on the day-ahead market - ${countries.get(selectedCountry)}`,
-    subtitle: new Date(selectedDate).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"}),
-    caption: "Source: ENTSO-E, Market Operator JSC",
-    marginLeft: 60,
-    width: 800,
-    height: 300,
-    x: {label: "Hour of Day", domain: [0, 24], ticks: 24},
-    y: {label: "Price (EUR/MWh)", grid: true, domain: [-30, 320]},
-    marks: [
-      Plot.rect([{x1: 0, x2: 24, y1: bottom_avg, y2: top_avg}], {
-        x1: "x1", x2: "x2", y1: "y1", y2: "y2",
-        fill: "lightyellow", fillOpacity: 0.3,
-      }),
-      Plot.ruleY([bottom_avg], {stroke: "red", strokeDasharray: "4,4"}),
-      Plot.ruleY([top_avg], {stroke: "green", strokeDasharray: "4,4"}),
-      Plot.link([{x: 1, y1: bottom_avg, y2: top_avg}], {
-        x: 12, y1: "y1", y2: "y2",
-        stroke: "gray", strokeWidth: 1.5,
-        markerStart: "arrow-reverse", markerEnd: "arrow",
-      }),
-      Plot.text([{x: 12, y: (bottom_avg + top_avg) / 2, label: `TB${storageDuration}`}], {
-        x: "x", y: "y", text: "label",
-        textAnchor: "start", dx: 5, fill: "currentColor", fontSize: 14,
-      }),
-      Plot.lineY(hourly_prices_for_date, {
-        x: "hour", y: "price_dam",
-        stroke: "steelblue", strokeWidth: 2, curve: "step-after",
-      }),
-      Plot.ruleY(top, {
-        x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
-        stroke: "green", strokeWidth: 4, tip: true,
-      }),
-      Plot.ruleY(bottom, {
-        x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
-        stroke: "red", strokeWidth: 4, tip: true,
-      }),
-      Plot.text([{x: 12, y: top_avg, label: `average of top ${storageDuration} hours`}], {
-        x: "x", y: "y", text: "label", dy: -15, fill: "currentColor", fontSize: 14,
-      }),
-      Plot.text([{x: 12, y: bottom_avg, label: `average of bottom ${storageDuration} hours`}], {
-        x: "x", y: "y", text: "label", dy: 15, fill: "currentColor", fontSize: 14,
-      }),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: `Illustration of arbitrage on the day-ahead market - ${countries.get(selectedCountry)}`,
+  subtitle: new Date(selectedDate).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"}),
+  caption: "Source: ENTSO-E, Market Operator JSC",
+  marginLeft: 60,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {label: "Hour of Day", domain: [0, 24], ticks: 24},
+  y: {label: "Price (EUR/MWh)", grid: true, domain: [-30, 320]},
+  marks: [
+    Plot.rect([{x1: 0, x2: 24, y1: dam_bottom_avg, y2: dam_top_avg}], {
+      x1: "x1", x2: "x2", y1: "y1", y2: "y2",
+      fill: "lightyellow", fillOpacity: 0.3,
+    }),
+    Plot.ruleY([dam_bottom_avg], {stroke: "red", strokeDasharray: "4,4"}),
+    Plot.ruleY([dam_top_avg], {stroke: "green", strokeDasharray: "4,4"}),
+    Plot.link([{x: 1, y1: dam_bottom_avg, y2: dam_top_avg}], {
+      x: 12, y1: "y1", y2: "y2",
+      stroke: "gray", strokeWidth: 1.5,
+      markerStart: "arrow-reverse", markerEnd: "arrow",
+    }),
+    Plot.text([{x: 12, y: (dam_bottom_avg + dam_top_avg) / 2, label: `TB${storageDuration}`}], {
+      x: "x", y: "y", text: "label",
+      textAnchor: "start", dx: 5, fill: "currentColor", fontSize: 14,
+    }),
+    Plot.lineY(hourly_prices_for_date, {
+      x: "hour", y: "price_dam",
+      stroke: "steelblue", strokeWidth: 2, curve: "step-after",
+    }),
+    Plot.ruleY(dam_top, {
+      x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+      stroke: "green", strokeWidth: 4, tip: true,
+    }),
+    Plot.ruleY(dam_bottom, {
+      x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+      stroke: "red", strokeWidth: 4, tip: true,
+    }),
+    Plot.text([{x: 12, y: dam_top_avg, label: `average of top ${storageDuration} hours`}], {
+      x: "x", y: "y", text: "label", dy: -15, fill: "currentColor", fontSize: 14,
+    }),
+    Plot.text([{x: 12, y: dam_bottom_avg, label: `average of bottom ${storageDuration} hours`}], {
+      x: "x", y: "y", text: "label", dy: 15, fill: "currentColor", fontSize: 14,
+    }),
+  ],
+})
 ```
 
 The next figure shows the evolution of TB4 measure for Ukraine's day-ahead market over time. Each dot represents the daily price spread, while the moving average highlights the trend in arbitrage opportunities on the day-ahead market.
@@ -124,35 +124,33 @@ const startDate = view(Inputs.date({label: "Select start date", value: "2024-01-
 ```
 
 ```js
-(() => {
-  const data_filt = arbitrage_revenues
-    .filter(d => d.date >= new Date(startDate))
-    .filter(d => d.country == "UA");
+const ua_arbitrage = arbitrage_revenues.filter(d => d.date >= new Date(startDate) && d.country == "UA")
+```
 
-  return Plot.plot({
-    title: "Energy arbitrage potential in Ukraine",
-    subtitle: `Daily top-${storageDuration} / bottom-${storageDuration} spreads on the day-ahead market, ${windowSize}-day moving average`,
-    caption: "Source: Market Operator JSC",
-    marginLeft: 50,
-    marginRight: 50,
-    width: 800,
-    height: 300,
-    x: {line: true, label: null},
-    y: {nice: true, grid: true, label: "EUR / MWh / day"},
-    marks: [
-      Plot.dot(data_filt, {
-        x: "date", y: "value",
-        stroke: d => countries.get(d.country),
-        r: 2, strokeOpacity: 0.3, tip: true,
-      }),
-      Plot.lineY(data_filt, {
-        x: "date", y: "ma",
-        stroke: d => countries.get(d.country),
-        strokeWidth: 2,
-      }),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: "Energy arbitrage potential in Ukraine",
+  subtitle: `Daily top-${storageDuration} / bottom-${storageDuration} spreads on the day-ahead market, ${windowSize}-day moving average`,
+  caption: "Source: Market Operator JSC",
+  marginLeft: 50,
+  marginRight: 50,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {line: true, label: null},
+  y: {nice: true, grid: true, label: "EUR / MWh / day"},
+  marks: [
+    Plot.dot(ua_arbitrage, {
+      x: "date", y: "value",
+      stroke: d => countries.get(d.country),
+      r: 2, strokeOpacity: 0.3, tip: true,
+    }),
+    Plot.lineY(ua_arbitrage, {
+      x: "date", y: "ma",
+      stroke: d => countries.get(d.country),
+      strokeWidth: 2,
+    }),
+  ],
+})
 ```
 
 Comparing Ukraine against neighbouring EU markets highlights shared regional drivers. However, from H2 2025 a clear divergence emerges: Ukraine's spreads rise sharply, exceeding EUR 200/MWh/day, while neighbouring EU markets remain within a lower cyclical range.
@@ -168,7 +166,7 @@ Plot.plot({
   caption: "Source: ENTSO-E, Market Operator JSC",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: {line: true, label: null},
   y: {nice: true, grid: true, label: "EUR / MWh"},
@@ -187,96 +185,96 @@ Plot.plot({
 One important feature of Ukraine's electricity market is the strong influence of regulated price caps. As the figure shows, market prices frequently hit both the upper and lower caps, especially during periods of system stress or oversupply. This means that observed prices are often constrained by regulation rather than pure supply–demand balance, and the true intrinsic value of storage is likely higher.
 
 ```js
-(() => {
-  const price_day = aq.from(priceUA.filter(d => d.date >= new Date(startDate)))
-    .groupby("date")
-    .rollup({
-      price_min: d => op.min(d.price_uah),
-      price_max: d => op.max(d.price_uah),
-      price_avg: d => op.mean(d.price_uah),
-    })
-    .orderby("date")
-    .fold(["price_min", "price_max", "price_avg"], {as: ["type", "price"]});
+const price_day = aq.from(priceUA.filter(d => d.date >= new Date(startDate)))
+  .groupby("date")
+  .rollup({
+    price_min: d => op.min(d.price_uah),
+    price_max: d => op.max(d.price_uah),
+    price_avg: d => op.mean(d.price_uah),
+  })
+  .orderby("date")
+  .fold(["price_min", "price_max", "price_avg"], {as: ["type", "price"]})
 
-  const cap_day = aq.from(price_cap.filter(d => d.date >= new Date(startDate)))
-    .groupby("date")
-    .rollup({
-      price_min: d => op.min(d.price_min),
-      price_max: d => op.max(d.price_max),
-    });
+const cap_day = aq.from(price_cap.filter(d => d.date >= new Date(startDate)))
+  .groupby("date")
+  .rollup({
+    price_min: d => op.min(d.price_min),
+    price_max: d => op.max(d.price_max),
+  })
 
-  const vars = new Map([
-    ["price_avg", "average"],
-    ["price_min", "min"],
-    ["price_max", "max"],
-  ]);
+const price_type_labels = new Map([
+  ["price_avg", "average"],
+  ["price_min", "min"],
+  ["price_max", "max"],
+])
+```
 
-  return Plot.plot({
-    title: "Electricity prices vs caps on the day-ahead market in Ukraine",
-    caption: "Sources: Market Operator JSC",
-    marginLeft: 50,
-    marginRight: 60,
-    width: 800,
-    height: 300,
-    x: {line: true, label: null},
-    y: {nice: true, grid: true, label: "UAH / MWh"},
-    color: {legend: true},
-    marks: [
-      Plot.areaY(cap_day, {
-        x: "date", y1: "price_min", y2: "price_max",
-        curve: "step-after", fill: "#bae4bc", fillOpacity: 0.4,
-      }),
-      Plot.dot(price_day, {
-        x: "date", y: "price",
-        stroke: d => vars.get(d.type),
-        r: 2, strokeOpacity: 0.3, tip: true,
-      }),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: "Electricity prices vs caps on the day-ahead market in Ukraine",
+  caption: "Sources: Market Operator JSC",
+  marginLeft: 50,
+  marginRight: 60,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {line: true, label: null},
+  y: {nice: true, grid: true, label: "UAH / MWh"},
+  color: {legend: true},
+  marks: [
+    Plot.areaY(cap_day, {
+      x: "date", y1: "price_min", y2: "price_max",
+      curve: "step-after", fill: "#bae4bc", fillOpacity: 0.4,
+    }),
+    Plot.dot(price_day, {
+      x: "date", y: "price",
+      stroke: d => price_type_labels.get(d.type),
+      r: 2, strokeOpacity: 0.3, tip: true,
+    }),
+  ],
+})
 ```
 
 The **balancing market (BM)** also presents arbitrage opportunities. The figure below shows volume-weighted price spreads between the day-ahead and balancing markets, separately for downward regulation (excess supply) and upward regulation (supply deficit). It points to growing opportunities in the balancing market and cross-market arbitrage as an additional source of revenue, complementing the trading on the day-ahead markets.
 
 ```js
-(() => {
-  const regGen1 = d3reg.regressionLoess()
-    .x(d => d.date)
-    .y(d => d.spread)
-    .bandwidth(bandwidth);
+const regGen_bm = d3reg.regressionLoess()
+  .x(d => d.date)
+  .y(d => d.spread)
+  .bandwidth(bandwidth)
 
-  const spread_trend = Array.from(
-    d3.group(spread_BM_DAM_daily, d => d.direction),
-    ([direction, rows]) => {
-      rows.sort((a, b) => d3.ascending(a.x, b.x));
-      return regGen1(rows).map(([x, y]) => ({date: x, value: y, direction}));
-    }
-  ).flat();
+const spread_trend = Array.from(
+  d3.group(spread_BM_DAM_daily, d => d.direction),
+  ([direction, rows]) => {
+    rows.sort((a, b) => d3.ascending(a.x, b.x));
+    return regGen_bm(rows).map(([x, y]) => ({date: x, value: y, direction}));
+  }
+).flat()
+```
 
-  return Plot.plot({
-    title: "Price spreads between balancing (BM) and day-ahead (DAM) markets - Ukraine",
-    subtitle: "Volume-weighted daily average spreads",
-    caption: "Source: Ukrenergo, Market Operator JSC",
-    marginLeft: 50,
-    marginRight: 50,
-    width: 800,
-    height: 300,
-    x: {line: true, label: null},
-    y: {nice: true, grid: true, label: "EUR / MWh"},
-    fx: {label: null},
-    color: {legend: true},
-    marks: [
-      Plot.dot(spread_BM_DAM_daily, {
-        x: "date", y: "spread", fx: "direction",
-        stroke: "direction", r: 2, strokeOpacity: 0.2, tip: true,
-      }),
-      Plot.lineY(spread_trend, {
-        x: "date", y: "value", fx: "direction",
-        stroke: "direction", strokeWidth: 2.5,
-      }),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: "Price spreads between balancing (BM) and day-ahead (DAM) markets - Ukraine",
+  subtitle: "Volume-weighted daily average spreads",
+  caption: "Source: Ukrenergo, Market Operator JSC",
+  marginLeft: 50,
+  marginRight: 50,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {line: true, label: null},
+  y: {nice: true, grid: true, label: "EUR / MWh"},
+  fx: {label: null},
+  color: {legend: true},
+  marks: [
+    Plot.dot(spread_BM_DAM_daily, {
+      x: "date", y: "spread", fx: "direction",
+      stroke: "direction", r: 2, strokeOpacity: 0.2, tip: true,
+    }),
+    Plot.lineY(spread_trend, {
+      x: "date", y: "value", fx: "direction",
+      stroke: "direction", strokeWidth: 2.5,
+    }),
+  ],
+})
 ```
 
 One of the largest balancing needs today is associated with absorbing excess energy during periods of strong solar generation (mid-day) and low demand (night-time). Data shows that downward regulation volumes are higher and more concentrated than upward regulation pointing to a growing role of energy storage in absorbing surplus electricity during predictable oversupply windows, reducing curtailment and alleviating balancing pressure, while positioning storage to later discharge during deficit hours.
@@ -286,40 +284,42 @@ const selectYear = view(Inputs.checkbox(["2022", "2023", "2024", "2025"], {label
 ```
 
 ```js
-(() => {
-  const spread_year = spread_BM_DAM_hourly.map(d => ({
-    ...d,
-    year: new Date(d.date).getFullYear().toString(),
-  }));
+const bm_with_year = spread_BM_DAM_hourly.map(d => ({
+  ...d,
+  year: new Date(d.date).getFullYear().toString(),
+}))
+```
 
-  const data = d3.flatRollup(
-    spread_year.filter(d => selectYear.includes(d.year)),
-    v => d3.median(v, d => d.volume_bm),
-    d => d.year,
-    d => d.hour,
-    d => d.direction,
-  ).map(([year, hour, direction, volume]) => ({year, hour, direction, volume}));
+```js
+const bm_volumes = d3.flatRollup(
+  bm_with_year.filter(d => selectYear.includes(d.year)),
+  v => d3.median(v, d => d.volume_bm),
+  d => d.year,
+  d => d.hour,
+  d => d.direction,
+).map(([year, hour, direction, volume]) => ({year, hour, direction, volume}))
+```
 
-  return Plot.plot({
-    title: "Volumes traded on the balancing market - Ukraine",
-    caption: "Source: Ukrenergo",
-    subtitle: "Median hourly volumes by year",
-    marginLeft: 50,
-    marginRight: 30,
-    width: 800,
-    height: 300,
-    x: {line: true, label: "hour of day"},
-    y: {nice: true, grid: true, label: "MWh / hour / day"},
-    fx: {label: null},
-    color: {legend: true},
-    marks: [
-      Plot.lineY(data, {
-        x: "hour", y: "volume", fx: "direction",
-        stroke: "year", curve: "catmull-rom", tip: true,
-      }),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: "Volumes traded on the balancing market - Ukraine",
+  caption: "Source: Ukrenergo",
+  subtitle: "Median hourly volumes by year",
+  marginLeft: 50,
+  marginRight: 30,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {line: true, label: "hour of day"},
+  y: {nice: true, grid: true, label: "MWh / hour / day"},
+  fx: {label: null},
+  color: {legend: true},
+  marks: [
+    Plot.lineY(bm_volumes, {
+      x: "hour", y: "volume", fx: "direction",
+      stroke: "year", curve: "catmull-rom", tip: true,
+    }),
+  ],
+})
 ```
 
 This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as indicators of economic opportunity for energy storage, rather than on project-specific revenues. Translating these spreads into bankable cashflows requires a dispatch model that incorporates state-of-charge constraints, round-trip efficiency, market participation rules, etc. The results should be interpreted as a directional assessment of how storage value in Ukraine has evolved relative to neighbouring markets, not as a project-level revenue forecast.
@@ -331,12 +331,8 @@ This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as 
 #### Aggregate and transform data
 
 ```js
-const lastDayPrevMonth = (() => {
-  const today = new Date();
-  return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0))
-    .toISOString()
-    .split("T")[0];
-})()
+const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 0))
+  .toISOString().split("T")[0]
 ```
 
 ```js
@@ -344,47 +340,31 @@ const bandwidth = view(Inputs.range([0, 0.3], {label: "Select smoothing bandwidt
 ```
 
 ```js
-const arbitrage_revenues = (() => {
-  let sorted = aq.from(prices_hourly_DAM)
-    .params({storageDuration: storageDuration})
-    .groupby("country", "date")
-    .orderby("date", "price_dam");
+const arb_sorted = aq.from(prices_hourly_DAM)
+  .params({storageDuration: storageDuration})
+  .groupby("country", "date")
+  .orderby("date", "price_dam")
 
-  let bottom = sorted
-    .slice(0, storageDuration)
-    .rollup({bottom: op.sum("price_dam")});
+const arb_bottom = arb_sorted.slice(0, storageDuration).rollup({bottom: op.sum("price_dam")})
+const arb_top = arb_sorted.slice(-storageDuration).rollup({top: op.sum("price_dam")})
 
-  let top = sorted
-    .slice(-storageDuration)
-    .rollup({top: op.sum("price_dam")});
-
-  return top
-    .join(bottom)
-    .derive({value: d => (d.top - d.bottom) / storageDuration})
-    .groupby("country")
-    .orderby("country", "date")
-    .derive({
-      ma: aq.rolling(op.mean("value"), [-(windowSize - 1), 0]),
-    })
-    .objects();
-})()
+const arbitrage_revenues = arb_top
+  .join(arb_bottom)
+  .derive({value: d => (d.top - d.bottom) / storageDuration})
+  .groupby("country")
+  .orderby("country", "date")
+  .derive({ma: aq.rolling(op.mean("value"), [-(windowSize - 1), 0])})
+  .objects()
 ```
 
 ```js
-const hourly_prices_for_date = (() => {
-  const filtered = prices_hourly_DAM
-    .filter(d =>
-      d.date.getTime() === new Date(selectedDate).getTime() &&
-      d.country === selectedCountry
-    )
-    .sort((a, b) => a.hour - b.hour);
+const filtered_day_prices = prices_hourly_DAM
+  .filter(d => d.date.getTime() === new Date(selectedDate).getTime() && d.country === selectedCountry)
+  .sort((a, b) => a.hour - b.hour)
 
-  if (filtered.length > 0) {
-    const lastHour = filtered[filtered.length - 1];
-    filtered.push({...lastHour, hour: 24});
-  }
-  return filtered;
-})()
+const hourly_prices_for_date = filtered_day_prices.length > 0
+  ? [...filtered_day_prices, {...filtered_day_prices[filtered_day_prices.length - 1], hour: 24}]
+  : filtered_day_prices
 ```
 
 ```js

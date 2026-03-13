@@ -1,9 +1,10 @@
 export default {
   root: "src",
-  title: "Energy Analysis",
+  title: "Infra and Energy Data",
+  style: "style.css",
   pages: [
-    {name: "Economics of energy storage", path: "/storage"},
-    {name: "Renewables price capture", path: "/capture"},
-  ],
-  footer: "Data sources: ENTSO-E, Market Operator JSC, Ukrenergo, Guaranteed Buyer."
+    {name: "Economics of energy storage", path: "/energy-storage"},
+    {name: "Renewables price capture", path: "/res-price-capture"},
+    {name: "EV market in Ukraine", path: "/ev-market-ua"},
+  ]
 };

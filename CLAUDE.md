@@ -19,15 +19,16 @@ Pages load data directly from raw GitHub URLs in the data repo:
 - Raw files: `https://raw.githubusercontent.com/atsokol/res-yield-data/refs/heads/main/data/data_raw/<file>.csv`
 - Processed files: `https://raw.githubusercontent.com/atsokol/res-yield-data/refs/heads/main/data/data_output/<file>.csv`
 
-> **Note:** The existing pages (`storage.md`, `capture.md`) currently reference `energy-data-ua-eu` in their URLs — update to `res-yield-data` once confirmed.
+> **Note:** `energy-storage.md` and `res-price-capture.md` currently reference `energy-data-ua-eu` in their data URLs — update to `res-yield-data` once confirmed.
 
 ## Repo structure
 
 ```
 src/
   index.md                 # homepage
-  storage.md               # Economics of energy storage in Ukraine
-  capture.md               # Renewables price capture UA + EU
+  energy-storage.md        # Economics of energy storage in Ukraine
+  res-price-capture.md     # Renewables price capture UA + EU
+  ev-market-ua.md          # EV market in Ukraine
   components/
     countries.js           # shared Map: country code → name
 .github/workflows/
@@ -42,24 +43,46 @@ src/
 4. Add the page to `observablehq.config.js`
 5. Push → auto-deploys
 
+When converting an R/Quarto `.qmd` into a post, follow **[WRITING_STYLE.md](./WRITING_STYLE.md)** — prose voice, chart conventions, annex structure, and interactive control patterns derived from existing polished posts.
+
 ## Observable JS conventions
 
-- `viewof` inputs and reactive cells work the same as in Observable notebooks
 - npm packages: `import * as thing from "npm:package@version"` (no `require()`)
 - Shared utilities live in `src/components/` and are imported as `import {x} from "./components/file.js"`
-- `d3`, `Plot`, `Inputs` are available as globals
+- `d3`, `Plot`, `Inputs`, `view` are available as globals
 - All async data loads (`d3.csv(...)`) must use `await` so dependent cells receive an array, not a Promise
 
 ### Block cells: Framework vs. notebook syntax
 
 Observable Framework `.md` files only recognise `const`/`let`/`var`, function, class, and import declarations as cell **outputs**. The classic notebook block-cell syntax `name = { ... return x; }` is silently ignored — the code runs but produces no output and nothing is displayed.
 
-**Always use these patterns instead:**
+**Preferred patterns — split multi-step logic across separate ` ```js ` blocks:**
+
+```js
+// Step 1: named intermediate cells (accessible to all later blocks)
+const grouped = d3.group(data, d => d.country)
+const smoothed = Array.from(grouped, ([country, rows]) => regGen(rows).map(...)).flat()
+```
+
+```js
+// Step 2: display cell — bare expression, no assignment
+Plot.plot({ marks: [Plot.line(smoothed, {...})] })
+```
+
+Multiple `const` declarations in the same block are all exported and reactive. Prefer this over IIFEs — it makes each step independently named and reactive.
+
+**Patterns reference:**
 
 | Intent | Correct syntax |
 |---|---|
-| Named cell (used by other cells) | `const name = (() => { ...; return value; })()` |
-| Display-only cell (renders a chart) | `(() => { ...; return Plot.plot({...}); })()` |
+| Named cell | `const name = expression` |
+| Multiple prep steps | multiple `const` declarations in one block (no IIFE needed) |
+| Display-only | bare `Plot.plot({...})` — last expression in a block is displayed |
+| Reactive input | `const x = view(Inputs.select([...]))` |
+
+`view()` is the preferred reactive input syntax (equivalent to `viewof`). It renders the widget inline and makes the value reactive.
+
+Avoid IIFEs (`(() => { ... })()`). They are only necessary when a block must avoid polluting the namespace with intermediate variable names (rare).
 
 ### Arquero import
 
@@ -72,6 +95,37 @@ import {op} from "npm:arquero"
 ```
 
 `op` is a valid named export; `aq` must be a namespace import.
+
+## CSS styling
+
+`src/style.css` is **not** auto-loaded by Observable Framework. It must be registered explicitly:
+
+```js
+// observablehq.config.js
+export default {
+  style: "style.css",
+  ...
+}
+```
+
+Setting `style` **replaces** the entire default theme — the framework's own CSS is no longer injected. You must re-import it manually at the top of `style.css`:
+
+```css
+@import url("observablehq:default.css");
+@import url("observablehq:theme-air.css");
+@import url("observablehq:theme-near-midnight.css") (prefers-color-scheme: dark);
+```
+
+The framework's default prose max-width is 640px (hardcoded in `global.css`). To widen prose to match charts, override using the `#observablehq-main` ID prefix for sufficient specificity:
+
+```css
+#observablehq-main p,
+#observablehq-main h1, /* ... etc */ {
+  max-width: 800px;
+}
+```
+
+Charts should use `width: Math.min(width, 800)` — the reactive `width` fills the container; capping at 800px keeps charts aligned with prose.
 
 ## Local dev
 

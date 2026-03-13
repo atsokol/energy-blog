@@ -22,7 +22,7 @@ Plot.plot({
   caption: "Sources: ENTSO-E, Market Operator JSC",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: {label: null},
   y: {nice: true, grid: true, label: "EUR / MWh"},
@@ -54,7 +54,7 @@ Plot.plot({
   caption: "Sources: ENTSO-E, Market Operator JSC",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: {line: true, label: "hour of day"},
   y: {nice: true, grid: true, tickFormat: d3.format(".0%")},
@@ -78,7 +78,7 @@ Plot.plot({
   caption: "Sources: ENTSO-E, Market Operator JSC, Guaranteed Buyer",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: {label: null, ticks: 4},
   y: {nice: true, grid: true, tickFormat: d3.format(".0%")},
@@ -113,7 +113,7 @@ Plot.plot({
   caption: "Sources: ENTSO-E, Market Operator JSC, Guaranteed Buyer",
   marginLeft: 50,
   marginRight: 80,
-  width: 800,
+  width: Math.min(width, 800),
   height: 400,
   x: {ticks: [1, 4, 7, 10], tickFormat: d => d3.utcFormat("%b")(new Date(2000, d)), label: "month of year"},
   y: {nice: true, grid: true, tickFormat: d3.format(".0%")},
@@ -143,7 +143,7 @@ Plot.plot({
   caption: "Sources: Market Operator JSC",
   marginLeft: 50,
   marginRight: 30,
-  width: 800,
+  width: Math.min(width, 800),
   height: 300,
   x: {line: true, label: "hour of day"},
   y: {nice: true, tickFormat: d3.format(".0%")},
@@ -177,57 +177,57 @@ Plot.plot({
 ```
 
 ```js
-(() => {
-  const dates = ["2022-02-28", "2023-07-01"];
-  const caps = price_cap
-    .filter(d => system.includes(d.energy_system))
-    .filter(d => dates.includes(d.date.toISOString().slice(0, 10)));
+const cap_dates = ["2022-02-28", "2023-07-01"]
+const caps = price_cap
+  .filter(d => system.includes(d.energy_system))
+  .filter(d => cap_dates.includes(d.date.toISOString().slice(0, 10)))
+```
 
-  return Plot.plot({
-    title: "Electricity price caps in Ukraine",
-    caption: "Sources: Energy Map, Market Operator JSC",
-    marginLeft: 50,
-    marginRight: 100,
-    width: 800,
-    height: 300,
-    x: {line: true, label: "hour of day"},
-    y: {nice: true, label: "UAH / MWh", tickFormat: d3.format(".0f")},
-    color: {
-      range: d3.schemeYlGnBu[5],
-      type: "ordinal",
-      legend: true,
-      label: "Date",
-      tickFormat: d3.utcFormat("%Y"),
-    },
-    marks: [
-      Plot.areaY(caps, {
-        x: d => d.hour,
-        y1: "price_min",
-        y2: "price_max",
-        fill: "date",
-        stroke: "lightgrey",
-        reverse: true,
-        curve: "step-before",
-        tip: true,
-      }),
-      Plot.arrow([{x1: 4, y1: 4000, x2: 6.8, y2: 3500}], {
-        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-        stroke: "grey", strokeWidth: 1.5, bend: -20,
-      }),
-      Plot.text([{x: 4, y: 4000, label: "narrow corridor in 2022"}], {
-        x: "x", y: "y", text: "label", dy: -10, fontSize: 14, fill: "grey",
-      }),
-      Plot.arrow([{x1: 16, y1: 7500, x2: 14, y2: 5700}], {
-        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-        stroke: "grey", strokeWidth: 1.5, bend: -20,
-      }),
-      Plot.text([{x: 16, y: 7500, label: "wider price caps introduced from July 2023"}], {
-        x: "x", y: "y", text: "label", dy: -10, fontSize: 14, fill: "grey",
-      }),
-      Plot.ruleY([0]),
-    ],
-  });
-})()
+```js
+Plot.plot({
+  title: "Electricity price caps in Ukraine",
+  caption: "Sources: Energy Map, Market Operator JSC",
+  marginLeft: 50,
+  marginRight: 100,
+  width: Math.min(width, 800),
+  height: 300,
+  x: {line: true, label: "hour of day"},
+  y: {nice: true, label: "UAH / MWh", tickFormat: d3.format(".0f")},
+  color: {
+    range: d3.schemeYlGnBu[5],
+    type: "ordinal",
+    legend: true,
+    label: "Date",
+    tickFormat: d3.utcFormat("%Y"),
+  },
+  marks: [
+    Plot.areaY(caps, {
+      x: d => d.hour,
+      y1: "price_min",
+      y2: "price_max",
+      fill: "date",
+      stroke: "lightgrey",
+      reverse: true,
+      curve: "step-before",
+      tip: true,
+    }),
+    Plot.arrow([{x1: 4, y1: 4000, x2: 6.8, y2: 3500}], {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "grey", strokeWidth: 1.5, bend: -20,
+    }),
+    Plot.text([{x: 4, y: 4000, label: "narrow corridor in 2022"}], {
+      x: "x", y: "y", text: "label", dy: -10, fontSize: 14, fill: "grey",
+    }),
+    Plot.arrow([{x1: 16, y1: 7500, x2: 14, y2: 5700}], {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "grey", strokeWidth: 1.5, bend: -20,
+    }),
+    Plot.text([{x: 16, y: 7500, label: "wider price caps introduced from July 2023"}], {
+      x: "x", y: "y", text: "label", dy: -10, fontSize: 14, fill: "grey",
+    }),
+    Plot.ruleY([0]),
+  ],
+})
 ```
 
 This notebook updates automatically based on the most recently available data. Data and code are available on [GitHub](https://github.com/atsokol/res-yield-data).
@@ -277,15 +277,13 @@ const regGen1 = d3reg.regressionLoess()
 ```
 
 ```js
-const capture_monthly_smooth = (() => {
-  const grouped = d3.group(capture_monthly, d => d.country, d => d.tech);
-  return Array.from(grouped, ([country, techMap]) =>
-    Array.from(techMap, ([tech, rows]) => {
-      rows.sort((a, b) => d3.ascending(a.x, b.x));
-      return regGen1(rows).map(([x, y]) => ({date: x, value: y, country, tech}));
-    })
-  ).flat(2);
-})()
+const capture_monthly_grouped = d3.group(capture_monthly, d => d.country, d => d.tech)
+const capture_monthly_smooth = Array.from(capture_monthly_grouped, ([country, techMap]) =>
+  Array.from(techMap, ([tech, rows]) => {
+    rows.sort((a, b) => d3.ascending(a.x, b.x));
+    return regGen1(rows).map(([x, y]) => ({date: x, value: y, country, tech}));
+  })
+).flat(2)
 ```
 
 ```js
@@ -296,17 +294,15 @@ const regGen2 = d3reg.regressionLoess()
 ```
 
 ```js
-const capture_seas_smooth = (() => {
-  const grouped = d3.group(capture_seas, d => d.country, d => d.tech, d => d.year);
-  return Array.from(grouped, ([country, techMap]) =>
-    Array.from(techMap, ([tech, yearMap]) =>
-      Array.from(yearMap, ([year, rows]) => {
-        rows.sort((a, b) => d3.ascending(a.month, b.month));
-        return regGen2(rows).map(([x, y]) => ({month: x, value: y, country, tech, year}));
-      })
-    )
-  ).flat(3);
-})()
+const capture_seas_grouped = d3.group(capture_seas, d => d.country, d => d.tech, d => d.year)
+const capture_seas_smooth = Array.from(capture_seas_grouped, ([country, techMap]) =>
+  Array.from(techMap, ([tech, yearMap]) =>
+    Array.from(yearMap, ([year, rows]) => {
+      rows.sort((a, b) => d3.ascending(a.month, b.month));
+      return regGen2(rows).map(([x, y]) => ({month: x, value: y, country, tech, year}));
+    })
+  )
+).flat(3)
 ```
 
 #### Electricity price data
@@ -323,13 +319,11 @@ const regGen3 = d3reg.regressionLoess()
 ```
 
 ```js
-const baseload_smooth = (() => {
-  const grouped = d3.group(daily_baseload, d => d.country);
-  return Array.from(grouped, ([country, rows]) => {
-    rows.sort((a, b) => d3.ascending(a.x, b.x));
-    return regGen3(rows).map(([x, y]) => ({date: new Date(x), price: y, country}));
-  }).flat();
-})()
+const baseload_grouped = d3.group(daily_baseload, d => d.country)
+const baseload_smooth = Array.from(baseload_grouped, ([country, rows]) => {
+  rows.sort((a, b) => d3.ascending(a.x, b.x));
+  return regGen3(rows).map(([x, y]) => ({date: new Date(x), price: y, country}));
+}).flat()
 ```
 
 ```js
@@ -345,53 +339,33 @@ const monthly_baseload = d3.flatRollup(
 ```
 
 ```js
-const daily_baseload = (() => {
-  const result = d3.rollup(
-    prices_hourly,
-    v => d3.mean(v, d => d.price_eur),
-    d => d.country,
-    d => d.date
-  );
-  return Array.from(result, ([country, dateMap]) =>
-    Array.from(dateMap, ([date, price]) => ({country, date: new Date(date), price}))
-  ).flat();
-})()
+const daily_baseload_map = d3.rollup(
+  prices_hourly,
+  v => d3.mean(v, d => d.price_eur),
+  d => d.country,
+  d => d.date
+)
+const daily_baseload = Array.from(daily_baseload_map, ([country, dateMap]) =>
+  Array.from(dateMap, ([date, price]) => ({country, date: new Date(date), price}))
+).flat()
 ```
 
 ```js
-const prices_relative = (() => {
-  const data = prices_hourly.map(d => ({
-    ...d,
-    year: new Date(d.date).getFullYear().toString(),
-  }));
-
-  const daily_avg = d3.rollup(
-    data,
-    v => d3.mean(v, d => d.price_eur),
-    d => d.country,
-    d => d.year,
-    d => d.date
-  );
-
-  const with_relative = data.map(d => ({
-    ...d,
-    price_relative: d.price_eur / daily_avg.get(d.country)?.get(d.year)?.get(d.date),
-  }));
-
-  const result = d3.rollup(
-    with_relative,
-    v => d3.median(v, d => d.price_relative),
-    d => d.country,
-    d => d.year,
-    d => d.hour
-  );
-
-  return Array.from(result, ([country, yearMap]) =>
-    Array.from(yearMap, ([year, hourMap]) =>
-      Array.from(hourMap, ([hour, price]) => ({country, year, hour, price}))
-    )
-  ).flat(2);
-})()
+const prices_with_year = prices_hourly.map(d => ({
+  ...d,
+  year: new Date(d.date).getFullYear().toString(),
+}))
+const daily_avg = d3.rollup(prices_with_year, v => d3.mean(v, d => d.price_eur), d => d.country, d => d.year, d => d.date)
+const prices_with_relative = prices_with_year.map(d => ({
+  ...d,
+  price_relative: d.price_eur / daily_avg.get(d.country)?.get(d.year)?.get(d.date),
+}))
+const prices_relative_map = d3.rollup(prices_with_relative, v => d3.median(v, d => d.price_relative), d => d.country, d => d.year, d => d.hour)
+const prices_relative = Array.from(prices_relative_map, ([country, yearMap]) =>
+  Array.from(yearMap, ([year, hourMap]) =>
+    Array.from(hourMap, ([hour, price]) => ({country, year, hour, price}))
+  )
+).flat(2)
 ```
 
 ```js
