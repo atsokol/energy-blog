@@ -4,13 +4,18 @@ title: Economics of gas peakers in Ukraine
 
 # Economics of gas peakers in Ukraine
 
-Gas-fired peakers are the primary source of dispatchable flexibility in Ukraine's power system. After Russian attacks destroyed approximately 9 GW of large thermal capacity in 2024 alone — roughly a quarter of pre-war installed capacity — the remaining gas fleet has shifted from a supplementary role to a system-critical one, covering evening demand peaks and absorbing residual load not served by nuclear, hydro, and renewables. The economics of a gas peaker hinge on the **spark spread**: the margin between the electricity price received and the cost of gas consumed per MWh of output. When spreads are wide and persistent, investment in new gas capacity is attractive; when price caps constrain electricity revenues below the gas break-even, plants run at a loss.
+Gas-fired peakers are the primary source of dispatchable generation in Ukraine's power system. After Russian attacks destroyed or occupied roughly two-thirds of Ukraine's pre-war generation capacity, the remaining gas fleet has shifted from a supplementary role to a system-critical one, covering evening demand peaks and absorbing residual load not served by nuclear, hydro, and renewables.
+
+The economics of a gas peaker hinges on the **spark spread**: the margin between the electricity price earned and the cost of gas consumed per MWh of output. When spreads are wide and persistent, investment in new gas capacity is attractive; when price caps constrain electricity revenues below the gas break-even, plants run at a loss.
 
 ## Gas prices in Ukraine
 
-Gas prices in Ukraine are determined by three forces acting simultaneously. First, European wholesale prices set the import-parity ceiling: the cost of sourcing gas at the **TTF** hub and transporting it to the Ukrainian border. Second, domestic production — operated primarily by Naftogaz/Ukrgasvydobuvannya — historically kept exchange prices well below import-parity; Russian strikes on gas infrastructure since 2024 have reduced domestic output by approximately 40%, compressing this structural discount. Third, growing generator demand from gas-fired plants replacing destroyed thermal capacity has added further pressure on domestic supply.
+Gas prices in Ukraine are determined by three forces acting simultaneously:
+ - European wholesale prices set the import parity ceiling: the cost of sourcing gas at the European gas hubs such as the **TTF** and transporting it to the Ukrainian border. 
+ - Domestic production, operated primarily by Naftogaz/Ukrgasvydobuvannya, historically kept exchange prices well below import parity. Russian strikes on gas infrastructure since 2024 have reduced domestic output by up to 60%, compressing this structural discount. 
+ - Growing demand from gas-fired plants replacing destroyed thermal capacity has added further pressure on prices.
 
-The figure below shows monthly average gas prices on the **Ukrainian Energy Exchange (UEEX)** against the TTF import-parity price. UEEX trades are for GTS-delivered gas; the import-parity series reflects the TTF spot price plus transit cost to the Ukrainian border, converted at the prevailing UAH/EUR exchange rate.
+The figure below shows monthly average gas prices on the **Ukrainian Energy Exchange (UEEX)** against the TTF import parity price, which reflects the TTF spot price plus transit cost to the Ukrainian border and injection into the GTS, converted at the prevailing UAH/EUR exchange rate.
 
 ```js
 const startDateGas = view(Inputs.date({label: "Start date", value: "2023-01-01"}))
@@ -307,7 +312,24 @@ const ueex_daily = d3.rollups(
   gas_market_uah,
 }))
 
-const ueex_map = new Map(ueex_daily.map(d => [d.date.toISOString().slice(0, 10), d]))
+// Forward-fill gaps: carry last known UEEX price forward for days with no trades
+const ueex_map = (() => {
+  const sorted = ueex_daily.slice().sort((a, b) => d3.ascending(a.date, b.date))
+  const map = new Map()
+  if (!sorted.length) return map
+  const raw = new Map(sorted.map(d => [d.date.toISOString().slice(0, 10), d]))
+  const end = sorted[sorted.length - 1].date
+  let lastKnown = null
+  const cur = new Date(sorted[0].date)
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10)
+    const entry = raw.get(key)
+    if (entry) lastKnown = entry
+    if (lastKnown) map.set(key, lastKnown)
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return map
+})()
 ```
 
 ```js

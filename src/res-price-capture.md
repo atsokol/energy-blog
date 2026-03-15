@@ -8,6 +8,8 @@ Electricity is traded in short time blocks, typically hourly or 15-minute interv
 
 To compare across such volatile prices, analysts often reference the **baseload price** — the average day-ahead price across all intervals in a day. It serves as a benchmark for what a generator running continuously would earn.
 
+## Baseload electricity prices
+
 ```js
 const selectCountries = view(Inputs.checkbox(
   [...countries.keys()],
@@ -69,6 +71,8 @@ Plot.plot({
 })
 ```
 
+## Renewable price capture
+
 For renewables like solar and wind, what matters in addition to the baseload price is the **capture factor** — the technology's weighted average price, calculated over the hours when it actually generates, weighted by the volume produced in each hour. A capture factor >100% means the technology generates when prices are above baseload (favourable). A capture factor <100% signals that production is concentrated in lower-priced hours, reducing revenue potential.
 
 ```js
@@ -106,6 +110,8 @@ Capture factors for solar and wind in Ukraine are broadly in line with EU trends
 
 For now, wind capture factors are more resilient in both Ukraine and the EU, thanks to more diverse and less peaked generation profiles and less overlap with low-price periods.
 
+## Seasonal patterns
+
 ```js
 Plot.plot({
   title: "Seasonal variation in capture factors",
@@ -133,6 +139,8 @@ Plot.plot({
   ],
 })
 ```
+
+## Ukraine: the 2022 price cap anomaly
 
 A notable point is that in 2022, Ukraine's solar capture factor stood ~20% above baseload, an unusually high premium by EU market standards. This likely reflected the impact of price caps, which created a narrow two-tier pricing structure: a higher daytime range (coinciding with solar output) and a lower night-time range. This setup pushed the solar capture factor above 100%, creating a temporary premium. After the shift to wider caps from July 2023, with minimum prices close to zero, this anomaly disappeared.
 

@@ -42,6 +42,8 @@ Plot.plot({
 })
 ```
 
+## Day-ahead market arbitrage
+
 In this environment, flexibility becomes crucial. Energy storage can shift power from surplus to deficit hours and respond rapidly during stress events, helping keep the system balanced. Storage earns revenues from two main sources: (1) **energy arbitrage** from moving electricity from low-priced to high-priced hours either through owner-controlled dispatch in the day-ahead or intraday markets, or through system-operator-controlled activations in the balancing market; and (2) **availability revenues**, paid by the system operator in exchange for keeping capacity ready to respond, providing a stable and recurring income stream.
 
 The figure below illustrates the **day-ahead market (DAM) arbitrage** using the **TB4 (top-4 / bottom-4)** measure. TB4 is calculated as the difference between the average price of the four most expensive hours (typically the evening peak) and the average price of the four cheapest hours (often at night or mid-day), capturing the price spread.
@@ -182,6 +184,8 @@ Plot.plot({
 })
 ```
 
+## Regulated price caps
+
 One important feature of Ukraine's electricity market is the strong influence of regulated price caps. As the figure shows, market prices frequently hit both the upper and lower caps, especially during periods of system stress or oversupply. This means that observed prices are often constrained by regulation rather than pure supply–demand balance, and the true intrinsic value of storage is likely higher.
 
 ```js
@@ -233,6 +237,8 @@ Plot.plot({
   ],
 })
 ```
+
+## Balancing market
 
 The **balancing market (BM)** also presents arbitrage opportunities. The figure below shows volume-weighted price spreads between the day-ahead and balancing markets, separately for downward regulation (excess supply) and upward regulation (supply deficit). It points to growing opportunities in the balancing market and cross-market arbitrage as an additional source of revenue, complementing the trading on the day-ahead markets.
 

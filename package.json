@@ -5,9 +5,22 @@
   "scripts": {
     "build": "observable build",
     "dev": "observable preview",
-    "clean": "observable clean"
+    "clean": "observable clean",
+    "setup": "npm install",
+    "make_slides": "node scripts/make_slides.mjs",
+    "render": "node scripts/render-slides.mjs",
+    "linkedin": "node scripts/gen-linkedin.mjs"
   },
   "dependencies": {
-    "@observablehq/framework": "^1.13.0"
+    "@anthropic-ai/sdk": "^0.39",
+    "@marp-team/marp-cli": "^4.0",
+    "@observablehq/framework": "^1.13.0",
+    "@observablehq/plot": "^0.6",
+    "@resvg/resvg-js": "^2.6.2",
+    "arquero": "^5",
+    "d3": "^7",
+    "d3-regression": "^1",
+    "jsdom": "^25",
+    "pdf-lib": "^1.17.1"
   }
 }
