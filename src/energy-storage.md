@@ -172,7 +172,7 @@ Plot.plot({
   height: 300,
   x: {line: true, label: null},
   y: {nice: true, grid: true, label: "EUR / MWh"},
-  color: {legend: true},
+  color: {legend: true, domain: colorDomain, range: colorRange},
   marks: [
     Plot.lineY(arbitrage_revenues.filter(d => d.date >= new Date(startDate)), {
       x: "date", y: "ma",
@@ -472,5 +472,5 @@ import * as d3reg from "npm:d3-regression"
 ```
 
 ```js
-import {countries} from "./components/countries.js"
+import {countries, colorDomain, colorRange} from "./components/countries.js"
 ```

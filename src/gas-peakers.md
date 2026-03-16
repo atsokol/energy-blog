@@ -83,6 +83,14 @@ const sparkWindowSize = view(Inputs.range([4, 12], {value: 8, step: 4, label: "M
 ```js
 const startDateSpark = view(Inputs.date({label: "Start date", value: "2023-12-31"}))
 ```
+```js
+const allSparkCountries = [...new Set(spark_weekly_ma.map(d => d.country))].sort()
+const selectedSparkCountries = view(Inputs.checkbox(allSparkCountries, {
+  label: "Countries",
+  value: allSparkCountries,
+  format: d => countries.get(d) ?? d,
+}))
+```
 
 ```js
 Plot.plot({
@@ -95,10 +103,10 @@ Plot.plot({
   height: 320,
   x: {line: true, label: null},
   y: {nice: true, grid: true, label: "EUR / MWh"},
-  color: {legend: true},
+  color: {legend: true, domain: colorDomain, range: colorRange},
   marks: [
     Plot.ruleY([0], {stroke: "#aaa", strokeDasharray: "4,4"}),
-    Plot.lineY(spark_weekly_ma.filter(d => d.week >= new Date(startDateSpark)), {
+    Plot.lineY(spark_weekly_ma.filter(d => d.week >= new Date(startDateSpark) && selectedSparkCountries.includes(d.country)), {
       x: "week", y: "ma",
       stroke: d => countries.get(d.country),
       strokeWidth: d => d.country === "UA" ? 2.5 : 1.5,
@@ -110,11 +118,11 @@ Plot.plot({
 })
 ```
 
-EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads through 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a 50% efficient combined-cycle reference plant. Ukraine's spread, calculated using TTF import-parity gas costs, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. 
+EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads through 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a gas reciprocating engine reference plant (heat rate 2.2, ~45% efficiency). Ukraine's spread, calculated using TTF import-parity gas costs, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. 
 
 ## Daily dispatch economics
 
-For illustration, the figure below shows hourly day-ahead electricity prices for a selected date alongside the gas break-even price for a CCGT reference plant (50% efficiency). Two break-even lines are shown: one based on TTF import-parity gas cost (upper bound) and one based on the prevailing UEEX within-day price on that date (base case). Hours where the electricity price exceeds the break-even are shaded green; below it, the plant would generate at a variable loss.
+For illustration, the figure below shows hourly day-ahead electricity prices for a selected date alongside the gas break-even price for a gas reciprocating engine reference plant (heat rate 2.2, ~45% efficiency). Two break-even lines are shown: one based on TTF import-parity gas cost (upper bound) and one based on the prevailing UEEX within-day price on that date (base case). Hours where the electricity price exceeds the break-even are shaded green; below it, the plant would generate at a variable loss.
 
 ```js
 const selectedDatePeaker = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
@@ -124,7 +132,7 @@ const selectedDatePeaker = view(Inputs.date({label: "Select date", value: lastDa
 Plot.plot({
   title: `Day-ahead electricity prices vs gas break-even in Ukraine`,
   subtitle: new Date(selectedDatePeaker).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"}),
-  caption: "Sources: Market Operator JSC, UEEX, Yahoo Finance (TTF). Break-even: CCGT reference plant, 50% efficiency",
+  caption: "Sources: Market Operator JSC, UEEX, Yahoo Finance (TTF). Break-even: gas reciprocating engine, heat rate 2.2",
   marginLeft: 60,
   marginRight: 30,
   width: Math.min(width, 800),
@@ -141,6 +149,7 @@ Plot.plot({
       stroke: "steelblue", strokeWidth: 2, curve: "step-after", tip: true,
     }),
     Plot.ruleY([be_engine_mkt_day], {stroke: "steelblue", strokeDasharray: "4,4", strokeWidth: 1.5}),
+    Plot.ruleY([0]),
     Plot.text([
       {y: be_engine_mkt_day, label: "Break-even (UEEX)"},
     ], {
@@ -153,15 +162,15 @@ Plot.plot({
 })
 ```
 
-The price cap — currently set at UAH 15,000/MWh during all hours until end of March 2026 — is clearly visible as a ceiling on hourly prices. During the evening peak, when gas generators are most needed, prices frequently hit the cap. The break-even for a CCGT at UEEX domestic pricing sits in the UAH 4,400–5,100/MWh range. This means that under current cap levels, plants running on domestically-priced gas are profitable in most off-peak hours as well.
+The day-ahead market price cap — currently set at UAH 15,000/MWh — is clearly visible as a ceiling on hourly prices. During the evening peak, when gas generators are most needed, prices frequently hit the cap. The break-even electricity price is the minimum the plant must earn per MWh sold to cover its gas bill: total delivered gas cost (commodity price plus transmission and distribution charges) divided by the share of gas energy the plant converts into electricity. Full calculation logic and assumptions are documented in the [source code](https://github.com/atsokol/energy-blog/blob/main/src/gas-peakers.md). This means that under current cap levels, plants running on domestically-priced gas are profitable in most hours of the day.
 
 ## Profitability profile: hours and margins
 
-The heatmap below shows, for each hour of day and each year, the share of hours in which a CCGT reference plant would have earned a positive gross margin on the day-ahead market.
+The heatmap below shows, for each hour of day and each year, the share of hours in which a gas reciprocating engine reference plant would have earned a positive gross margin on the day-ahead market.
 
 ```js
 Plot.plot({
-  title: "Profitable hours for CCGT reference plant in Ukraine",
+  title: "Profitable hours for gas reciprocating engine reference plant in Ukraine",
   subtitle: "% of hours with positive gross margin (UEEX gas pricing)",
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 50,
@@ -188,9 +197,9 @@ Plot.plot({
 })
 ```
 
-The heatmap reveals a structural shift in profitability. In 2022–2023, cap-constrained prices kept the CCGT below break-even for most of the day. By 2024–2025, the evening peak window (hours 17–22) reached near-100% profitability, and profitable hours expanded into the morning, mid-day and night ramps. 
+The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2025, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. In early 2026, profitable hours expanded across most of the day, driven by tighter system balance following generation capacity losses.
 
-The figures below show the evolution of profitable hours per month and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine.
+The figures below show the evolution of profitable hours per month and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the downside case: even at full European gas prices, profitable hours and gross margin remain substantial.
 
 ```js
 const profitable_monthly_long = profitable_monthly.flatMap(d => [
@@ -207,21 +216,20 @@ const quarterlyTickFormat = d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) :
 
 ```js
 Plot.plot({
-  title: "Monthly profitable dispatch hours for CCGT reference plant in Ukraine",
+  title: "Monthly profitable dispatch hours for gas reciprocating engine reference plant in Ukraine",
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 50,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {label: null, axis: null},
+  x: {label: null},
   y: {nice: true, grid: true, label: "hours / month"},
-  fx: {label: null, ticks: quarterly_months, tickFormat: quarterlyTickFormat},
-  color: {legend: true, domain: ["UEEX (domestic)"], range: ["#f59e0b", "steelblue"]},
+  color: {legend: true, domain: ["UEEX (domestic)", "TTF import-parity"], range: ["#f59e0b", "steelblue"]},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.barY(profitable_monthly_long, {
-      x: "series", y: "hours", fx: "month",
-      fill: "series", tip: true,
+    Plot.lineY(profitable_monthly_long, {
+      x: "month", y: "hours", 
+      stroke: "series", tip: true, curve: "catmull-rom"
     }),
   ],
 })
@@ -240,27 +248,27 @@ const monthly_margin_long = monthly_margin_top_n.flatMap(d => [
 
 ```js
 Plot.plot({
-  title: `Monthly average gross margin for CCGT reference plant in Ukraine`,
+  title: `Monthly average gross margin for gas reciprocating engine reference plant in Ukraine`,
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 60,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {label: null, axis: null},
+  x: {label: null},
   y: {nice: true, grid: true, label: "UAH / MWh"},
-  fx: {label: null, ticks: quarterly_months, tickFormat: quarterlyTickFormat},
-  color: {legend: true, domain: ["UEEX (domestic)"], range: ["#f59e0b", "steelblue"]},
+  color: {legend: true, domain: ["UEEX (domestic)", "TTF import-parity"], range: ["#f59e0b", "steelblue"]},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.barY(monthly_margin_long, {
-      x: "series", y: "margin", fx: "month",
-      fill: "series", tip: {format: {y: d3.format(",.0f")}},
+    Plot.lineY(monthly_margin_long, {
+      x: "month", y: "margin", 
+      stroke: "series", tip: {format: {y: d3.format(",.0f")}},
+      curve: "catmull-rom"
     }),
   ],
 })
 ```
 
-This analysis measures market-level profitability signals for a CCGT reference plant on the day-ahead market. It does not account for balancing market revenues (which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo) or fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine have evolved.
+This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. It does not account for balancing market revenues (which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo) or fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine has evolved.
 
 *This notebook updates automatically based on the most recently available data.*
 
@@ -277,11 +285,11 @@ const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date
 // Constants: plant and tariff parameters
 
 const HEAT_VAL  = 10.675   // MWh_th / tcm (1,000 m³) — gas LHV, lower heating value
-const TTF_TRANSPORT = 5.0  // EUR/MWh — TTF-to-Ukraine border transport cost
+const TTF_TRANSPORT = 5.0  // EUR/MWh TTF-to-Ukraine border transport cost
 const DA_FACTOR_DOMESTIC = 1.10    // NEURC multiplier on domestic GTS tariffs (next-day booking)
 const DA_FACTOR_CROSSBORDER = 1.45 // NEURC multiplier on cross-border GTS entry tariff (next-day booking)
-const HEAT_RATE_CCGT = 2.0 // MWh_th / MWh_el — CCGT reference plant (50% efficiency)
-const EMISSION_FACTOR = 0.37 // tCO₂ / MWh_el (EU ETS reference for CCGT)
+const HEAT_RATE = 2.2      // MWh_th / MWh_el — gas reciprocating engine reference plant (~45% efficiency)
+const EMISSION_FACTOR = 0.44 // tCO₂ / MWh_el (EU ETS reference for gas engine reference plant)
 ```
 
 ```js
@@ -400,7 +408,7 @@ const prices_all = prices_hourly_DAM.map(d => {
   const isUA = d.country === "UA"
   const ttf_price = ttf.price_eur_mwh ?? NaN
   const eua_price = eua.price_eur ?? NaN
-  const fuel_cost = ttf_price * HEAT_RATE_CCGT
+  const fuel_cost = ttf_price * HEAT_RATE
   const spark_spread = d.price_dam - fuel_cost
   const clean_spark_spread = isUA ? spark_spread : spark_spread - EMISSION_FACTOR * eua_price
   return {...d, ttf_price, eua_price, fuel_cost, spark_spread, clean_spark_spread}
@@ -448,12 +456,12 @@ const ua_hourly_with_be = priceUA.map(d => {
       ? tariff.cb_tariff_entry_eur_tcm * ttf.rate_eur
       : tariff.cb_tariff_entry_usd_tcm * ttf.rate_usd) * DA_FACTOR_CROSSBORDER
     const ttf_parity_uah_tcm = (ttf.price_eur_mwh + TTF_TRANSPORT) * HEAT_VAL * ttf.rate_eur + cb_tariff_uah
-    be_engine_ttf = ttf_parity_uah_tcm / HEAT_VAL * HEAT_RATE_CCGT
+    be_engine_ttf = ttf_parity_uah_tcm / HEAT_VAL * HEAT_RATE
   }
   const be_engine_mkt = (ueex && tariff)
     ? (ueex.gas_market_uah
         + tariff.gts_tariff_exit_domestic_uah_tcm * DA_FACTOR_DOMESTIC
-        + tariff.dso_tariff_wavg_tcm) / HEAT_VAL * HEAT_RATE_CCGT
+        + tariff.dso_tariff_wavg_tcm) / HEAT_VAL * HEAT_RATE
     : NaN
   return {
     date: new Date(dateKey),
@@ -625,5 +633,5 @@ import {op} from "npm:arquero"
 ```
 
 ```js
-import {countries} from "./components/countries.js"
+import {countries, colorDomain, colorRange} from "./components/countries.js"
 ```

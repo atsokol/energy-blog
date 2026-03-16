@@ -28,7 +28,7 @@ Plot.plot({
   height: 300,
   x: {label: null},
   y: {nice: true, grid: true, label: "EUR / MWh"},
-  color: {legend: true},
+  color: {legend: true, domain: colorDomain, range: colorRange},
   marks: [
     Plot.dot(
       monthly_baseload.filter(d => d.date >= new Date("2023-01-01") && selectCountries.includes(d.country)),
@@ -449,5 +449,5 @@ import * as d3reg from "npm:d3-regression"
 ```
 
 ```js
-import {countries} from "./components/countries.js"
+import {countries, colorDomain, colorRange} from "./components/countries.js"
 ```
