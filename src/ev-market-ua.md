@@ -4,7 +4,7 @@ title: EV market in Ukraine
 
 # EV market in Ukraine
 
-Ukraine now operates the largest battery electric vehicle fleet in Central and Eastern Europe (roughly 250,000 BEVs by end-2025) despite fighting a full-scale war since February 2022. The market was supported by tax incentives for BEVs (0% VAT and import duty rates) applicable until 1 Jan 2026, which reduced all-in import costs by 25–35% relative to equivalent ICE vehicles. 
+Ukraine now operates the largest battery electric vehicle fleet in Central and Eastern Europe (roughly 250,000 BEVs by end-2025) despite fighting a full-scale war since February 2022. The market was supported by tax incentives for BEVs (0% VAT and import duty rates), which reduced all-in import costs by 25–35% relative to equivalent ICE vehicles. 
 
 ```js
 import {Treemap} from "./components/treemap.js"
@@ -47,7 +47,7 @@ const yearTickFormat = d => d === last_year ? `${d} (${months_per_year.get(d)}m)
 
 ## Market growth
 
-EV registrations grew from ~9,000 units in 2021 to ~110,200 in 2025, a 12x increase over four years. The 2022 car market decline that cut total sales by 63% barely slowed BEV momentum: the tax incentives kept EVs competitively priced even as overall purchasing power fell. December 2025 alone recorded 32,800 BEV registrations, the surge driven by buying ahead of the tax incentives expiry. In 2026 EV registrations have undergone an immediate correction, the full extent of which is still unfolding.
+EV registrations grew from ~9,000 units in 2021 to ~110,200 in 2025, a 12x increase over four years. The 2022 car market decline that cut total sales by 63% barely slowed BEV momentum: the tax incentives kept EVs competitively priced even as overall purchasing power fell. December 2025 alone recorded 32,800 BEV registrations, the surge driven by buying ahead of the VAT exemption expiry. In 2026 EV registrations have undergone an immediate correction, the full extent of which is still unfolding.
 
 ```js
 (() => {
@@ -365,11 +365,7 @@ treemap_chart
 
 ## Post-exemption contraction
 
-The January 2026 VAT reinstatement has produced an immediate and confirmed market correction. After December 2025's record 32,800 BEV registrations — driven by panic buying ahead of the deadline — monthly volumes collapsed to 2,289 in January 2026 (−36% year-on-year from 3,602 in January 2025) and then fell further to 938 in February 2026 (−79% year-on-year from 4,514 in February 2025), the steepest single-month decline on record. Combined, January–February 2026 totalled just 3,227 BEVs versus 8,116 in the same period of 2025 — a decline of 60% and the lowest Jan–Feb total since early 2023. The sequential deterioration from January to February points to a demand freeze rather than a one-month adjustment: the 20% VAT reinstatement raised all-in import costs by 25–30%, moving a used Tesla Model 3 from roughly $15,000–$25,000 to $20,000–$32,000.
-
-Permanent incentives remain in place: zero customs duty, a nominal excise of €1/kWh of battery capacity, and zero Pension Fund fee mean BEVs still carry the lowest total import tax burden of any vehicle category. Whether domestic resales of pre-exemption inventory, declining used EV prices on international markets, and continued Chinese new EV competitiveness can arrest the decline through H1 2026 is the key variable for infrastructure investors assessing demand-side certainty.
-
-This analysis measures first-time vehicle registrations from the Ukrainian Ministry of Interior dataset, which records the administrative registration date rather than the date of import clearance; a portion of December 2025 registrations may reflect vehicles that cleared customs earlier. Registration counts do not capture the secondary market or military vehicle acquisitions. Fleet totals represent cumulative net registrations without deregistration adjustments.
+The January 2026 VAT reinstatement has produced an immediate market correction. After December 2025's record 32,800 BEV registrations — driven by panic buying ahead of the deadline — monthly volumes collapsed to 2,289 in January 2026 (−36% YoY) and 938 in February 2026 (−79% YoY). Permanent incentives remain in place: zero customs duty, a nominal excise of €1/kWh of battery capacity, and zero Pension Fund fee mean BEVs still carry the lowest total import tax burden of any vehicle category. 
 
 *This page updates automatically based on the most recently available data.*
 
@@ -377,8 +373,10 @@ This analysis measures first-time vehicle registrations from the Ukrainian Minis
 
 ### Annex: data sources
 
+This analysis measures first-time vehicle registrations from the Ukrainian Ministry of Interior dataset, which records the administrative registration date rather than the date of import clearance; a portion of December 2025 registrations may reflect vehicles that cleared customs earlier. Registration counts do not capture the secondary market or military vehicle acquisitions. Fleet totals represent cumulative net registrations without deregistration adjustments.
+
 - [Register of Vehicles and Owners](https://data.gov.ua/dataset/06779371-308f-42d7-895e-5a39833375f0) by the Ministry of Interior of Ukraine — data processing is done [here](https://github.com/atsokol/ukraine-EV-data-update)
 - [Alternative Fuels Observatory](https://alternative-fuels-observatory.ec.europa.eu/transport-mode/road/european-union-eu27/country-comparison#chart-html-kxuqidhktzm) by the European Commission
 
 
-Source code for this page: [atsokol/energy-blog](https://github.com/atsokol/energy-blog)
+Source code for this page: [atsokol/energy-blog](https://github.com/atsokol/energy-blog/blob/main/src/ev-market-ua.md)

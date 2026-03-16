@@ -268,7 +268,7 @@ Plot.plot({
 })
 ```
 
-This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. It does not account for balancing market revenues (which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo) or fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine has evolved.
+This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. Gas costs are based on market prices (UEEX exchange prices and TTF import-parity); it does not reflect subsidised PSO gas prices available to certain generators, which is a conscious choice to assess market-based economics. It also does not account for balancing market revenues, which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo, or fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine evolves.
 
 *This notebook updates automatically based on the most recently available data.*
 
