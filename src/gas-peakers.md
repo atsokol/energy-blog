@@ -46,7 +46,7 @@ Plot.plot({
 })
 ```
 
-The discount between UEEX and TTF import-parity has historically ranged from 20–75% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–20% of import-parity on a monthly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European gas prices higher on supply-security concerns, while Ukrainian domestic prices have remained relatively stable so far.
+The discount between UEEX and TTF import-parity has historically ranged from 20–40% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as domestic production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–15% of import-parity on a monthly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European gas prices higher on supply-security concerns, while Ukrainian domestic prices have remained relatively stable so far.
 
 ```js
 Plot.plot({
@@ -75,13 +75,13 @@ Plot.plot({
 
 ## Spark spread: Ukraine vs EU neighbours
 
-The spark spread measures a gas plant's profit margin. For EU markets operating under the EU Emissions Trading System, the relevant measure is the clean spark spread (CSS): electricity price minus fuel and carbon costs. For Ukraine, which is not yet part of the EU ETS, no material carbon costs to generation apply and are therefore excluded from the spark spread calculation.
+The spark spread measures a gas plant's gross profit margin. For EU markets operating under the EU Emissions Trading System, the relevant measure is the clean spark spread (CSS): electricity price minus fuel and carbon costs. For Ukraine, which is not yet part of the EU ETS, no material carbon costs to generation apply and are therefore excluded from the spark spread calculation.
 
 ```js
-const sparkWindowSize = view(Inputs.range([4, 12], {value: 8, step: 4, label: "Moving average window (weeks)"}))
+const sparkWindowSize = view(Inputs.range([4, 12], {value: 4, step: 4, label: "Moving average window (weeks)"}))
 ```
 ```js
-const startDateSpark = view(Inputs.date({label: "Start date", value: "2023-12-31"}))
+const startDateSpark = view(Inputs.date({label: "Start date", value: "2023-01-01"}))
 ```
 ```js
 const allSparkCountries = [...new Set(spark_weekly_ma.map(d => d.country))].sort()
@@ -118,11 +118,11 @@ Plot.plot({
 })
 ```
 
-EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads through 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a gas reciprocating engine reference plant (heat rate 2.2, ~45% efficiency). Ukraine's spread, calculated using TTF import-parity gas costs, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. 
+EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads for most of 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a gas engine reference plant (~45% efficiency). Ukraine's spread, calculated using TTF import-parity gas costs, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. 
 
 ## Daily dispatch economics
 
-For illustration, the figure below shows hourly day-ahead electricity prices for a selected date alongside the gas break-even price for a gas reciprocating engine reference plant (heat rate 2.2, ~45% efficiency). Two break-even lines are shown: one based on TTF import-parity gas cost (upper bound) and one based on the prevailing UEEX within-day price on that date (base case). Hours where the electricity price exceeds the break-even are shaded green; below it, the plant would generate at a variable loss.
+The figure below shows hourly day-ahead electricity prices in Ukraine for a selected date alongside the break-even price for a gas reciprocating engine reference plant (~45% efficiency) based on the prevailing UEEX price. Hours where the electricity price exceeds the break-even are shaded green; below it, the plant would generate at a variable loss.
 
 ```js
 const selectedDatePeaker = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
@@ -162,7 +162,7 @@ Plot.plot({
 })
 ```
 
-The day-ahead market price cap — currently set at UAH 15,000/MWh — is clearly visible as a ceiling on hourly prices. During the evening peak, when gas generators are most needed, prices frequently hit the cap. The break-even electricity price is the minimum the plant must earn per MWh sold to cover its gas bill: total delivered gas cost (commodity price plus transmission and distribution charges) divided by the share of gas energy the plant converts into electricity. Full calculation logic and assumptions are documented in the [source code](https://github.com/atsokol/energy-blog/blob/main/src/gas-peakers.md). This means that under current cap levels, plants running on domestically-priced gas are profitable in most hours of the day.
+The day-ahead market price cap — currently set at UAH 15,000/MWh — is clearly visible as a ceiling on hourly prices. During the evening peak, when gas generators are most needed, prices frequently hit the cap. The break-even electricity price is the minimum the plant must earn per MWh sold to cover its gas bill: total delivered gas cost (commodity price plus transmission and distribution charges) multiplied by the plant's efficiency. Full calculation logic and assumptions are documented in the [source code](https://github.com/atsokol/energy-blog/blob/main/src/gas-peakers.md). 
 
 ## Profitability profile: hours and margins
 
@@ -199,7 +199,7 @@ Plot.plot({
 
 The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2025, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. In early 2026, profitable hours expanded across most of the day, driven by tighter system balance following generation capacity losses.
 
-The figures below show the evolution of profitable hours per month and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the downside case: even at full European gas prices, profitable hours and gross margin remain substantial.
+The figures below show the evolution of profitable hours per month and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the hypothetical downside case of European gas prices.
 
 ```js
 const profitable_monthly_long = profitable_monthly.flatMap(d => [
@@ -268,7 +268,7 @@ Plot.plot({
 })
 ```
 
-This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. Gas costs are based on market prices (UEEX exchange prices and TTF import-parity); it does not reflect subsidised PSO gas prices available to certain generators, which is a conscious choice to assess market-based economics. It also does not account for balancing market revenues, which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo, or fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine evolves.
+This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. Gas costs are based on market prices (UEEX exchange prices and TTF import-parity); it does not reflect subsidised PSO gas prices available to certain generators, to assess market-based economics. It also does not account for balancing market revenues, which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo, fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine evolves.
 
 *This notebook updates automatically based on the most recently available data.*
 
@@ -293,15 +293,47 @@ const EMISSION_FACTOR = 0.44 // tCO₂ / MWh_el (EU ETS reference for gas engine
 ```
 
 ```js
-// TTF lookup map keyed by ISO date string
+// TTF lookup map keyed by ISO date string — forward-filled to cover dates with no trading (weekends, holidays, data lag)
 
-const ttf_map = new Map(ttf_raw.map(d => [d.date.toISOString().slice(0, 10), d]))
+const ttf_map = (() => {
+  const sorted = ttf_raw.slice().sort((a, b) => d3.ascending(a.date, b.date))
+  const map = new Map()
+  if (!sorted.length) return map
+  const raw = new Map(sorted.map(d => [d.date.toISOString().slice(0, 10), d]))
+  const end = new Date()
+  let lastKnown = null
+  const cur = new Date(sorted[0].date)
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10)
+    const entry = raw.get(key)
+    if (entry) lastKnown = entry
+    if (lastKnown) map.set(key, lastKnown)
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return map
+})()
 ```
 
 ```js
-// EUA carbon price lookup
+// EUA carbon price lookup — forward-filled to cover dates with no trading
 
-const eua_map = new Map(eua_raw.map(d => [d.date.toISOString().slice(0, 10), d]))
+const eua_map = (() => {
+  const sorted = eua_raw.slice().sort((a, b) => d3.ascending(a.date, b.date))
+  const map = new Map()
+  if (!sorted.length) return map
+  const raw = new Map(sorted.map(d => [d.date.toISOString().slice(0, 10), d]))
+  const end = new Date()
+  let lastKnown = null
+  const cur = new Date(sorted[0].date)
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10)
+    const entry = raw.get(key)
+    if (entry) lastKnown = entry
+    if (lastKnown) map.set(key, lastKnown)
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return map
+})()
 ```
 
 ```js
@@ -559,24 +591,21 @@ const monthly_margin_top_n = d3.flatRollup(
 // Gas and carbon price data
 
 const ttf_raw = await d3.csv(
-  "https://raw.githubusercontent.com/atsokol/res-yield-data/refs/heads/main/data/data_raw/ttf_daily_yahoo.csv",
+  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/ttf_daily_yahoo.csv",
   d3.autoType
 )
 ```
 
 ```js
 const eua_raw = await d3.csv(
-  "https://raw.githubusercontent.com/atsokol/res-yield-data/refs/heads/main/data/data_raw/eua_daily_yahoo.csv",
+  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/eua_daily_yahoo.csv",
   d3.autoType
 )
 ```
 
 ```js
-// UEEX Ukrainian gas exchange prices — from data_raw/
-// TODO: ensure ueex_gas_UA.csv is published to res-yield-data repo
-
 const ueex_raw = await d3.csv(
-  "https://raw.githubusercontent.com/atsokol/res-yield-data/refs/heads/main/data/data_raw/ueex_gas_UA.csv",
+  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/ueex_gas_UA.csv",
   d3.autoType
 )
 ```
@@ -610,12 +639,17 @@ const priceEU = await d3.csv(
 
 ```js
 const prices_hourly_DAM = [
-  ...priceUA.map(d => ({
-    country: d.country,
-    date: new Date(d.hour.toISOString().slice(0, 10)),
-    hour: +d.hour.getUTCHours(),
-    price_dam: +d.price_eur_mwh,
-  })),
+  ...priceUA.map(d => {
+    const dateKey = d.hour.toISOString().slice(0, 10)
+    const eur_mwh = +d.price_eur_mwh
+    const fallback_rate = +d.rate || ttf_map.get(dateKey)?.rate_eur
+    return {
+      country: d.country,
+      date: new Date(dateKey),
+      hour: +d.hour.getUTCHours(),
+      price_dam: !isNaN(eur_mwh) ? eur_mwh : (fallback_rate ? +d.price_uah / fallback_rate : NaN),
+    }
+  }),
   ...priceEU.map(d => ({
     country: d.country,
     date: new Date(d.hour.toISOString().slice(0, 10)),
