@@ -37,3 +37,5 @@ All views and errors are my own — traceable and challengeable.
 
 - [**EV market in Ukraine**](./ev-market-ua) — Electric vehicle adoption trends, model breakdown, and charging infrastructure across Ukraine.
 
+- [**Warsaw bike-sharing trip flows**](./warsaw-bikes) — Interactive OD flowmap of Veturilo trips across 384 stations by hour, day of week, and month (2023 season).
+

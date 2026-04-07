@@ -110,6 +110,7 @@ Plot.plot({
       x: "week", y: "ma",
       stroke: d => countries.get(d.country),
       strokeWidth: d => d.country === "UA" ? 2.5 : 1.5,
+      strokeOpacity: d => d.country === "UA" ? 1 : 0.6,
       curve: "catmull-rom",
       channels: {country: {value: d => countries.get(d.country), label: "country"}},
       tip: {format: {y: d3.format(".1f"), stroke: false, strokeWidth: false, z: false, country: true}},

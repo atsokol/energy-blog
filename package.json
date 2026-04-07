@@ -9,7 +9,8 @@
     "setup": "npm install",
     "make_slides": "node scripts/make_slides.mjs",
     "render": "node scripts/render-slides.mjs",
-    "linkedin": "node scripts/gen-linkedin.mjs"
+    "linkedin": "node scripts/gen-linkedin.mjs",
+    "bundle-flowmap": "esbuild scripts/flowmap-entry.js --bundle --format=esm --external:maplibre-gl --external:mapbox-gl --minify --outfile=src/components/flowmap-bundle.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39",
@@ -17,10 +18,18 @@
     "@observablehq/framework": "^1.13.0",
     "@observablehq/plot": "^0.6",
     "@resvg/resvg-js": "^2.6.2",
+    "@rollup/rollup-darwin-arm64": "^4.60.1",
     "arquero": "^5",
     "d3": "^7",
     "d3-regression": "^1",
     "jsdom": "^25",
     "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@deck.gl/core": "^8.9.28",
+    "@deck.gl/layers": "^8.9.28",
+    "@flowmap.gl/data": "^8.0.1",
+    "@flowmap.gl/layers": "^8.0.1",
+    "esbuild": "^0.28.0"
   }
 }
