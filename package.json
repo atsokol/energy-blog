@@ -24,6 +24,10 @@
     "jsdom": "^25",
     "pdf-lib": "^1.17.1"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.60.1",
+    "@rollup/rollup-linux-x64-gnu": "^4.60.1"
+  },
   "devDependencies": {
     "@deck.gl/core": "^8.9.28",
     "@deck.gl/layers": "^8.9.28",
