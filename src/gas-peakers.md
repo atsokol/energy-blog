@@ -15,7 +15,7 @@ Gas prices in Ukraine are determined by three forces acting simultaneously:
  - Domestic production, operated primarily by Naftogaz/Ukrgasvydobuvannya, historically kept gas prices well below import parity. Russian strikes on gas infrastructure since 2024 have reduced domestic output, compressing this structural discount. 
  - Growing demand from gas-fired plants replacing destroyed thermal capacity has added further pressure on prices.
 
-The figure below shows monthly average gas prices on the Ukrainian Energy Exchange (UEEX) against the TTF import parity price, which reflects the TTF spot price plus transit cost to the Ukrainian border and injection into the GTS, converted at the prevailing UAH/EUR exchange rate.
+The figure below shows weekly average gas prices on the Ukrainian Energy Exchange (UEEX) against the TTF import parity price, which reflects the TTF spot price plus transit cost to the Ukrainian border and injection into the GTS, converted at the prevailing UAH/EUR exchange rate.
 
 ```js
 const startDateGas = view(Inputs.date({label: "Start date", value: "2023-01-01"}))
@@ -24,7 +24,7 @@ const startDateGas = view(Inputs.date({label: "Start date", value: "2023-01-01"}
 ```js
 Plot.plot({
   title: "Gas prices in Ukraine vs TTF import-parity",
-  subtitle: "Monthly averages, EUR / MWh thermal",
+  subtitle: "Weekly averages, EUR / MWh thermal",
   caption: "Sources: UEEX, Yahoo Finance (TTF)",
   marginLeft: 50,
   marginRight: 30,
@@ -34,7 +34,7 @@ Plot.plot({
   y: {nice: true, grid: true, label: "EUR / MWh_th"},
   color: {legend: true},
   marks: [
-    Plot.lineY(gas_monthly_long.filter(d => d.date >= new Date(startDateGas)), {
+    Plot.lineY(gas_weekly_long.filter(d => d.date >= new Date(startDateGas)), {
       x: "date", y: "price_eur",
       stroke: "series",
       strokeWidth: d => d.series === "UEEX (domestic)" ? 2.5 : 1.5,
@@ -46,7 +46,7 @@ Plot.plot({
 })
 ```
 
-The discount between UEEX and TTF import-parity has historically ranged from 20–40% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as domestic production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–15% of import-parity on a monthly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European gas prices higher on supply-security concerns, while Ukrainian domestic prices have remained relatively stable so far.
+The discount between UEEX and TTF import-parity has historically ranged from 20–40% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as domestic production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–15% of import-parity on a weekly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European gas prices higher on supply-security concerns, while Ukrainian domestic prices have remained relatively stable so far.
 
 ```js
 Plot.plot({
@@ -61,13 +61,13 @@ Plot.plot({
   color: {scheme: "RdYlGn", reverse: true},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.barY(gas_discount_monthly.filter(d => d.date >= new Date(startDateGas)), {
-      x: "date",
+    Plot.rectY(gas_discount_weekly.filter(d => d.date >= new Date(startDateGas)), {
+      x1: "date",
+      x2: d => d3.utcWeek.offset(d.date, 1),
       y: "discount_pct",
-      fill: (d) => d.discount_pct > 0,
+      fill: d => d.discount_pct > 0,
       channels: {diff: {value: "discount_pct", label: "diff"}},
       tip: {format: {y: false, fill: false, diff: d3.format(".1%")}},
-      curve: "catmull-rom",
     }),
   ],
 })
@@ -200,37 +200,29 @@ Plot.plot({
 
 The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2025, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. In early 2026, profitable hours expanded across most of the day, driven by tighter system balance following generation capacity losses.
 
-The figures below show the evolution of profitable hours per month and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the hypothetical downside case of European gas prices.
+The figures below show the evolution of profitable hours per week and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the hypothetical downside case of European gas prices.
 
 ```js
-const profitable_monthly_long = profitable_monthly.flatMap(d => [
-  {month: d.month, series: "UEEX (domestic)", hours: d.profitable_hours_mkt},
-  {month: d.month, series: "TTF import-parity", hours: d.profitable_hours_ttf},
-])
-
-const quarterly_months = [...new Set(profitable_monthly.map(d => d.month.getTime()))]
-  .map(t => new Date(t))
-  .filter(d => [0, 3, 6, 9].includes(d.getUTCMonth()))
-
-const quarterlyTickFormat = d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)
+// Last completed week start (Sunday) — exclude the in-progress current week
+const lastFullWeek = d3.utcWeek.floor(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
 ```
 
 ```js
 Plot.plot({
-  title: "Monthly profitable dispatch hours for gas reciprocating engine reference plant in Ukraine",
+  title: "Number of profitable dispatch hours per week",
+  subtitle: `Calculated for gas engine reference plant based on UEEX gas price`, 
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 50,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {label: null},
-  y: {nice: true, grid: true, label: "hours / month"},
-  color: {legend: true, domain: ["UEEX (domestic)", "TTF import-parity"], range: ["#f59e0b", "steelblue"]},
+  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  y: {nice: true, grid: true, label: "hours / week"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.lineY(profitable_monthly_long, {
-      x: "month", y: "hours", 
-      stroke: "series", tip: true, curve: "catmull-rom"
+    Plot.lineY(profitable_weekly.filter(d => d.week <= lastFullWeek), {
+      x: d => d3.utcDay.offset(d.week, 6), y: "profitable_hours_mkt",
+      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom", tip: true,
     }),
   ],
 })
@@ -241,29 +233,22 @@ const operatingHours = view(Inputs.range([1, 12], {label: "Daily operating hours
 ```
 
 ```js
-const monthly_margin_long = monthly_margin_top_n.flatMap(d => [
-  {month: d.month, series: "UEEX (domestic)", margin: d.avg_margin_mkt},
-  {month: d.month, series: "TTF import-parity", margin: d.avg_margin_ttf},
-])
-```
-
-```js
 Plot.plot({
-  title: `Monthly average gross margin for gas reciprocating engine reference plant in Ukraine`,
+  title: `Weekly average gross margin`,
+  subtitle: `Calculated for gas engine reference plant based on UEEX gas price`,
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 60,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {label: null},
+  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "UAH / MWh"},
-  color: {legend: true, domain: ["UEEX (domestic)", "TTF import-parity"], range: ["#f59e0b", "steelblue"]},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.lineY(monthly_margin_long, {
-      x: "month", y: "margin", 
-      stroke: "series", tip: {format: {y: d3.format(",.0f")}},
-      curve: "catmull-rom"
+    Plot.lineY(weekly_margin_top_n.filter(d => d.week <= lastFullWeek), {
+      x: d => d3.utcDay.offset(d.week, 6), y: "avg_margin_mkt",
+      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom",
+      tip: {format: {y: d3.format(",.0f")}},
     }),
   ],
 })
@@ -356,7 +341,7 @@ const ueex_map = (() => {
   const map = new Map()
   if (!sorted.length) return map
   const raw = new Map(sorted.map(d => [d.date.toISOString().slice(0, 10), d]))
-  const end = sorted[sorted.length - 1].date
+  const end = new Date()
   let lastKnown = null
   const cur = new Date(sorted[0].date)
   while (cur <= end) {
@@ -371,20 +356,38 @@ const ueex_map = (() => {
 ```
 
 ```js
-// Monthly tariff lookup map keyed by "YYYY-MM-01"
+// Monthly tariff lookup map keyed by "YYYY-MM-01" — forward-filled to current month
 
-const tariff_map = new Map(
-  tariffs_raw.map(d => {
-    const [day, month, year] = d.date.split("/")
-    return [`${year}-${month.padStart(2, "0")}-01`, d]
-  })
-)
+const tariff_map = (() => {
+  const raw = new Map(
+    tariffs_raw.map(d => {
+      const [day, month, year] = d.date.split("/")
+      return [`${year}-${month.padStart(2, "0")}-01`, d]
+    })
+  )
+  const map = new Map()
+  if (!raw.size) return map
+  const keys = [...raw.keys()].sort()
+  const start = new Date(keys[0])
+  const now = new Date()
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  let lastKnown = null
+  const cur = new Date(start)
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10)
+    const entry = raw.get(key)
+    if (entry) lastKnown = entry
+    if (lastKnown) map.set(key, lastKnown)
+    cur.setUTCMonth(cur.getUTCMonth() + 1)
+  }
+  return map
+})()
 ```
 
 ```js
-// Monthly gas price aggregation
+// Weekly gas price aggregation
 
-const gas_monthly_agg = d3.flatRollup(
+const gas_weekly_agg = d3.flatRollup(
   ueex_daily.flatMap(d => {
     const dateKey = d.date.toISOString().slice(0, 10)
     const ttf = ttf_map.get(dateKey)
@@ -398,7 +401,7 @@ const gas_monthly_agg = d3.flatRollup(
     if (isNaN(cb_tariff_uah_tcm)) return []
     const ttf_parity_uah_tcm = (ttf.price_eur_mwh + TTF_TRANSPORT) * HEAT_VAL * ttf.rate_eur + cb_tariff_uah_tcm
     return [{
-      month: d3.utcMonth.floor(d.date),
+      week: d3.utcWeek.floor(d.date),
       ueex_eur: d.gas_market_uah / HEAT_VAL / ttf.rate_eur,
       ttf_parity_eur: ttf_parity_uah_tcm / HEAT_VAL / ttf.rate_eur,
       ttf_spot_eur: ttf.price_eur_mwh,
@@ -409,23 +412,23 @@ const gas_monthly_agg = d3.flatRollup(
     ttf_parity_eur: d3.mean(v, d => d.ttf_parity_eur),
     ttf_spot_eur: d3.mean(v, d => d.ttf_spot_eur),
   }),
-  d => d.month
-).map(([month, vals]) => ({date: month, ...vals}))
+  d => d.week
+).map(([week, vals]) => ({date: week, ...vals}))
 ```
 
 ```js
 // Long format for gas price time series chart
 
-const gas_monthly_long = gas_monthly_agg.flatMap(d => [
+const gas_weekly_long = gas_weekly_agg.flatMap(d => [
   {date: d.date, series: "UEEX (domestic)",     price_eur: d.ueex_eur},
   {date: d.date, series: "TTF import-parity",   price_eur: d.ttf_parity_eur},
 ])
 ```
 
 ```js
-// Monthly UEEX discount vs TTF import-parity
+// Weekly UEEX discount vs TTF import-parity
 
-const gas_discount_monthly = gas_monthly_agg.map(d => ({
+const gas_discount_weekly = gas_weekly_agg.map(d => ({
   date: d.date,
   discount_pct: (d.ueex_eur - d.ttf_parity_eur) / d.ttf_parity_eur,
 }))
@@ -543,9 +546,9 @@ const profitable_heatmap = d3.flatRollup(
 ```
 
 ```js
-// Monthly profitable hours count
+// Weekly profitable hours count
 
-const profitable_monthly = d3.flatRollup(
+const profitable_weekly = d3.flatRollup(
   ua_hourly_with_be,
   v => ({
     profitable_hours_mkt: d3.sum(v, d => d.profitable_mkt ? 1 : 0),
@@ -553,15 +556,15 @@ const profitable_monthly = d3.flatRollup(
     avg_margin_mkt: d3.mean(v.filter(d => d.profitable_mkt), d => d.spread_mkt) ?? 0,
     avg_margin_ttf: d3.mean(v.filter(d => d.profitable_ttf), d => d.spread_ttf) ?? 0,
   }),
-  d => d3.utcMonth.floor(d.date)
-).map(([month, vals]) => ({month, ...vals}))
-  .sort((a, b) => d3.ascending(a.month, b.month))
+  d => d3.utcWeek.floor(d.date)
+).map(([week, vals]) => ({week, ...vals}))
+  .sort((a, b) => d3.ascending(a.week, b.week))
 ```
 
 ```js
-// Monthly gross margin for top-N hours dispatch per day
+// Weekly gross margin for top-N hours dispatch per day
 
-const monthly_margin_top_n = d3.flatRollup(
+const weekly_margin_top_n = d3.flatRollup(
   ua_hourly_with_be,
   v => {
     const days = d3.group(v, d => d.date.toISOString().slice(0, 10))
@@ -582,9 +585,9 @@ const monthly_margin_top_n = d3.flatRollup(
       avg_margin_ttf: d3.mean(daily_margins, d => d.avg_margin_ttf),
     }
   },
-  d => d3.utcMonth.floor(d.date)
-).map(([month, vals]) => ({month, ...vals}))
-  .sort((a, b) => d3.ascending(a.month, b.month))
+  d => d3.utcWeek.floor(d.date)
+).map(([week, vals]) => ({week, ...vals}))
+  .sort((a, b) => d3.ascending(a.week, b.week))
 ```
 
 
