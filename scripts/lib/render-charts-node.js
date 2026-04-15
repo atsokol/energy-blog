@@ -336,6 +336,7 @@ window.HTMLCanvasElement.prototype.toDataURL = function() {
 // Observable Framework globals (mocked with sensible defaults)
 const width = 800;
 const view  = (x) => x;   // Inputs already return the default value (see below)
+const display = (x) => x; // Observable display() — passthrough in runner context
 const html  = (strings, ...vals) => strings.reduce((a, s, i) => a + s + (vals[i] ?? ''), '');
 const Inputs = {
   select : (opts, cfg = {}) => {
@@ -448,7 +449,7 @@ function _swatchesToSvg(figHtml) {
 }
 
 // Compose a valid standalone SVG from a Plot <figure> element.
-// Extracts swatches, ramp, and main chart; stacks them vertically.
+// Extracts title/subtitle, swatches, ramp, and main chart; stacks them vertically.
 // Avoids <foreignObject> — SVGs loaded via <img> cannot render it.
 function _wrapAsSvg(figHtml) {
   const mainSvg = _extractSvg(figHtml, 'plot-[a-z0-9]+');
@@ -457,8 +458,23 @@ function _wrapAsSvg(figHtml) {
   const mW = parseInt(mainSvg.match(/width="(\\d+)"/)?.[1] ?? '800');
   const mH = parseInt(mainSvg.match(/height="(\\d+)"/)?.[1] ?? '400');
 
+  // Extract HTML title / subtitle from the <figure> wrapper (Plot renders these
+  // as <h2> / <h3> elements outside the SVG, so we convert them to SVG text).
+  const titleText    = (figHtml.match(/<h2[^>]*>([\\s\\S]*?)<\\/h2>/) ?? [])[1]?.trim();
+  const subtitleText = (figHtml.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/) ?? [])[1]?.trim();
+
+  const _FONT = 'system-ui, sans-serif';
   const parts = [];
   let y = 0;
+
+  if (titleText) {
+    parts.push('<text x="4" y="' + (y + 15) + '" font-family="' + _FONT + '" font-size="13" font-weight="bold" fill="currentColor">' + titleText + '</text>');
+    y += 22;
+  }
+  if (subtitleText) {
+    parts.push('<text x="4" y="' + (y + 12) + '" font-family="' + _FONT + '" font-size="11" fill="#888">' + subtitleText + '</text>');
+    y += 18;
+  }
 
   // Categorical legend (HTML swatch divs → SVG rects + text)
   const swatchResult = _swatchesToSvg(figHtml);
@@ -483,7 +499,7 @@ function _wrapAsSvg(figHtml) {
   parts.push('<g transform="translate(0,' + y + ')">' + mainSvg + '</g>');
   y += mH;
 
-  if (parts.length === 1) return _addXmlns(mainSvg); // no legends, return as-is
+  if (parts.length === 1) return _addXmlns(mainSvg); // no title, no legends
 
   return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mW + '" height="' + y + '">' +
     parts.join('') + '</svg>';
@@ -554,3 +570,7 @@ export async function renderChartsFromMd({ mdPath, outDir, rootDir }) {
 
   return manifest;
 }
+
+// Export internals so specialised scripts (e.g. gen-update-slides.mjs) can
+// generate patched runners without re-parsing the whole .md file.
+export { extractBlocks, generateRunner };

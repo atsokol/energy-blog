@@ -23,7 +23,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 // Layout constants  (1280×720 pt = 16:9, matching Marp default)
 // ---------------------------------------------------------------------------
 const SLIDE_W   = 1280;
-const SLIDE_H   = 720;
+const SLIDE_H   = 960;   // 4:3 — better fit for double-stacked charts
 const PAD_X     = 40;
 const PAD_TOP   = 40;
 const PAD_BOT   = 30;
@@ -111,6 +111,26 @@ function drawRight(page, text, { font, size, color, y }) {
 }
 
 /**
+ * Word-wrap text to fit within maxWidth, returning an array of lines.
+ */
+function wrapText(text, font, size, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? current + ' ' + word : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/**
  * Draw horizontally centred text.
  */
 function drawCentre(page, text, { font, size, color, y }) {
@@ -134,9 +154,9 @@ function drawCentre(page, text, { font, size, color, y }) {
  * @param {object} opts
  * @param {string} opts.outDir   absolute path to output/<slug>/
  */
-export async function renderToPdf({ outDir }) {
-  const slidesMdPath = join(outDir, 'slides.md');
-  const slidesPdfPath = join(outDir, 'slides.pdf');
+export async function renderToPdf({ outDir, mdFile = 'slides.md', pdfFile = 'slides.pdf' }) {
+  const slidesMdPath = join(outDir, mdFile);
+  const slidesPdfPath = join(outDir, pdfFile);
   const chartsDir = join(outDir, 'charts');
 
   const md = readFileSync(slidesMdPath, 'utf8');
@@ -146,18 +166,17 @@ export async function renderToPdf({ outDir }) {
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const fontReg  = await doc.embedFont(StandardFonts.Helvetica);
 
-  const totalPages = 1 + chartSlides.length;
+  const hasTitleSlide = Boolean(title);
+  const totalPages = (hasTitleSlide ? 1 : 0) + chartSlides.length;
 
-  // ---- Title slide --------------------------------------------------------
-  {
+  // ---- Title slide (only when a # heading exists in the MD) ---------------
+  if (hasTitleSlide) {
     const page = doc.addPage([SLIDE_W, SLIDE_H]);
     page.drawRectangle({ x: 0, y: 0, width: SLIDE_W, height: SLIDE_H, color: rgb(1, 1, 1) });
 
-    // Centre title vertically (approximate: text baseline at 40% from bottom)
     const titleY = SLIDE_H * 0.50;
     drawCentre(page, title, { font: fontBold, size: TITLE_SIZE, color: COLOR_DARK, y: titleY });
 
-    // Red rule below title
     const ruleY = titleY - 16;
     page.drawLine({
       start: { x: PAD_X, y: ruleY },
@@ -166,54 +185,65 @@ export async function renderToPdf({ outDir }) {
       color: COLOR_RED,
     });
 
-    // Source URL – bottom right
     if (sourceUrl) {
       drawRight(page, `Source: ${sourceUrl}`, { font: fontReg, size: SOURCE_SIZE, color: COLOR_GREY, y: PAD_BOT });
     }
 
-    // Page number
     drawRight(page, '1', { font: fontReg, size: PAGE_NUM_SIZE, color: COLOR_GREY, y: PAD_BOT });
   }
 
   // ---- Chart slides -------------------------------------------------------
+  const pageOffset = hasTitleSlide ? 2 : 1;
   for (let i = 0; i < chartSlides.length; i++) {
     const { heading, chartFile } = chartSlides[i];
     const page = doc.addPage([SLIDE_W, SLIDE_H]);
     page.drawRectangle({ x: 0, y: 0, width: SLIDE_W, height: SLIDE_H, color: rgb(1, 1, 1) });
 
-    // Heading – top left
-    const headingY = SLIDE_H - PAD_TOP - HEADING_SIZE;
-    page.drawText(heading, {
-      x: PAD_X,
-      y: headingY,
-      size: HEADING_SIZE,
-      font: fontBold,
-      color: COLOR_DARK,
-    });
+    // Heading – top left, word-wrapped to fit slide width
+    const maxHeadingW  = SLIDE_W - 2 * PAD_X;
+    const headingLines = wrapText(heading, fontBold, HEADING_SIZE, maxHeadingW);
+    const lineHeight   = Math.round(HEADING_SIZE * 1.3);
+    const headingY     = SLIDE_H - PAD_TOP - HEADING_SIZE;
+
+    for (let li = 0; li < headingLines.length; li++) {
+      page.drawText(headingLines[li], {
+        x: PAD_X,
+        y: headingY - li * lineHeight,
+        size: HEADING_SIZE,
+        font: fontBold,
+        color: COLOR_DARK,
+      });
+    }
 
     // Chart PNG
     const pngBuffer = svgToPng(join(chartsDir, chartFile));
     const pngImage  = await doc.embedPng(pngBuffer);
     const { width: pngW, height: pngH } = pngImage.scale(1);
 
-    const chartPtW = CHART_W;
-    const chartPtH = Math.round(chartPtW * pngH / pngW);
-
-    // Centre chart in the space below the heading
-    const chartAreaTop = headingY - 12;               // gap below heading baseline
+    // Available area below heading (accounts for multi-line headings)
+    const chartAreaTop = headingY - (headingLines.length - 1) * lineHeight - 12;
     const chartAreaBot = PAD_BOT;
     const chartAreaH   = chartAreaTop - chartAreaBot;
-    const chartY       = chartAreaBot + Math.max(0, (chartAreaH - chartPtH) / 2);
+    const chartAreaW   = CHART_W;
+
+    // Scale to fit both dimensions (maintain aspect ratio)
+    const scale    = Math.min(chartAreaW / pngW, chartAreaH / pngH);
+    const drawW    = Math.round(pngW * scale);
+    const drawH    = Math.round(pngH * scale);
+
+    // Centre within available area
+    const chartX   = PAD_X + Math.round((chartAreaW - drawW) / 2);
+    const chartY   = chartAreaBot + Math.round((chartAreaH - drawH) / 2);
 
     page.drawImage(pngImage, {
-      x: PAD_X,
+      x: chartX,
       y: chartY,
-      width: chartPtW,
-      height: chartPtH,
+      width: drawW,
+      height: drawH,
     });
 
     // Page number – bottom right
-    drawRight(page, String(i + 2), { font: fontReg, size: PAGE_NUM_SIZE, color: COLOR_GREY, y: PAD_BOT });
+    drawRight(page, String(i + pageOffset), { font: fontReg, size: PAGE_NUM_SIZE, color: COLOR_GREY, y: PAD_BOT });
   }
 
   const pdfBytes = await doc.save();

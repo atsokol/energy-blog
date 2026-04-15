@@ -34,8 +34,8 @@ Plot.plot({
   y: {nice: true, grid: true, label: "EUR / MWh_th"},
   color: {legend: true},
   marks: [
-    Plot.lineY(gas_weekly_long.filter(d => d.date >= new Date(startDateGas)), {
-      x: "date", y: "price_eur",
+    Plot.lineY(gas_weekly_long.filter(d => d.date >= new Date(startDateGas) && d.date <= lastFullWeek), {
+      x: d => d3.utcDay.offset(d.date, 6), y: "price_eur",
       stroke: "series",
       strokeWidth: d => d.series === "UEEX (domestic)" ? 2.5 : 1.5,
       strokeDasharray: d => d.series === "TTF spot" ? "4,4" : null,
@@ -46,7 +46,7 @@ Plot.plot({
 })
 ```
 
-The discount between UEEX and TTF import-parity has historically ranged from 20–40% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as domestic production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–15% of import-parity on a weekly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European gas prices higher on supply-security concerns, while Ukrainian domestic prices have remained relatively stable so far.
+The discount between UEEX and TTF import-parity has historically ranged from 20–40% reflecting the stabilising role of domestic gas production. As the figure below shows, this discount narrowed sharply in 2025 as domestic production fell and generator gas demand rose. By early 2026, UEEX prices have converged to within 10–15% of import-parity on a weekly basis, significantly compressing the fuel-cost advantage. In March 2026, renewed fighting in the Middle East pushed European and Ukrainian gas prices higher on supply-security concerns. 
 
 ```js
 Plot.plot({
@@ -61,13 +61,16 @@ Plot.plot({
   color: {scheme: "RdYlGn", reverse: true},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.rectY(gas_discount_weekly.filter(d => d.date >= new Date(startDateGas)), {
+    Plot.rectY(gas_discount_weekly.filter(d => d.date >= new Date(startDateGas) && d.date <= lastFullWeek), {
       x1: "date",
-      x2: d => d3.utcWeek.offset(d.date, 1),
+      x2: d => d3.utcMonday.offset(d.date, 1),
       y: "discount_pct",
       fill: d => d.discount_pct > 0,
-      channels: {diff: {value: "discount_pct", label: "diff"}},
-      tip: {format: {y: false, fill: false, diff: d3.format(".1%")}},
+      channels: {
+        diff: {value: "discount_pct", label: "diff"},
+        end: {value: d => d3.utcDay.offset(d.date, 6), label: "week ending"},
+      },
+      tip: {format: {y: false, fill: false, x1: false, x2: false, diff: d3.format(".1%"), end: d3.utcFormat("%d %b %Y")}},
     }),
   ],
 })
@@ -78,7 +81,7 @@ Plot.plot({
 The spark spread measures a gas plant's gross profit margin. For EU markets operating under the EU Emissions Trading System, the relevant measure is the clean spark spread (CSS): electricity price minus fuel and carbon costs. For Ukraine, which is not yet part of the EU ETS, no material carbon costs to generation apply and are therefore excluded from the spark spread calculation.
 
 ```js
-const sparkWindowSize = view(Inputs.range([4, 12], {value: 4, step: 4, label: "Moving average window (weeks)"}))
+const sparkWindowSize = view(Inputs.range([4, 16], {value: 4, step: 4, label: "Trend smoothing window (weeks)"}))
 ```
 ```js
 const startDateSpark = view(Inputs.date({label: "Start date", value: "2023-01-01"}))
@@ -95,8 +98,8 @@ const selectedSparkCountries = view(Inputs.checkbox(allSparkCountries, {
 ```js
 Plot.plot({
   title: "Weekly spark spread: Ukraine vs EU neighbours",
-  subtitle: `EU: clean spark spread (fuel + EUA carbon); UA: simple spread (fuel only)`,
-  caption: "Sources: ENTSO-E, Market Operator JSC, Yahoo Finance (TTF, EUA)",
+  subtitle: `EU: clean spark spread (fuel + EUA carbon); UA: simple spread (UEEX fuel cost)`,
+  caption: "Sources: ENTSO-E, Market Operator JSC, UEEX, Yahoo Finance (TTF, EUA)",
   marginLeft: 50,
   marginRight: 30,
   width: Math.min(width, 800),
@@ -106,8 +109,8 @@ Plot.plot({
   color: {legend: true, domain: colorDomain, range: colorRange},
   marks: [
     Plot.ruleY([0], {stroke: "#aaa", strokeDasharray: "4,4"}),
-    Plot.lineY(spark_weekly_ma.filter(d => d.week >= new Date(startDateSpark) && selectedSparkCountries.includes(d.country)), {
-      x: "week", y: "ma",
+    Plot.lineY(spark_weekly_ma.filter(d => d.week >= new Date(startDateSpark) && d.week <= lastFullWeek && selectedSparkCountries.includes(d.country)), {
+      x: d => d3.utcDay.offset(d.week, 6), y: "ma",
       stroke: d => countries.get(d.country),
       strokeWidth: d => d.country === "UA" ? 2.5 : 1.5,
       strokeOpacity: d => d.country === "UA" ? 1 : 0.6,
@@ -119,51 +122,141 @@ Plot.plot({
 })
 ```
 
-EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads for most of 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a gas engine reference plant (~45% efficiency). Ukraine's spread, calculated using TTF import-parity gas costs, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. 
+EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark spreads for most of 2023–2025 as gas prices normalised from their 2022 crisis peaks, with spreads stabilising in the EUR 10–30/MWh range for a gas engine reference plant (~45% efficiency). Ukraine's spread, calculated using UEEX domestic gas prices, showed a more volatile path: deeply negative in 2022–2023 when electricity price caps prevented any gas cost pass-through, recovering sharply through 2024–2025 as caps were raised and electricity prices converged toward European levels. Following the gas spike price in March 2026, spark spreads have declined across the board, with European spreads turning firmly negative. 
 
-## Daily dispatch economics
+## Dispatch economics
 
-The figure below shows hourly day-ahead electricity prices in Ukraine for a selected date alongside the break-even price for a gas reciprocating engine reference plant (~45% efficiency) based on the prevailing UEEX price. Hours where the electricity price exceeds the break-even are shaded green; below it, the plant would generate at a variable loss.
+The figure below shows hourly day-ahead electricity prices in Ukraine alongside the break-even price for a gas reciprocating engine reference plant (~45% efficiency) based on the prevailing UEEX price. Hours where the electricity price exceeds the break-even are shaded green; the orange dashed line marks the day-ahead maximum price cap.
 
 ```js
-const selectedDatePeaker = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
+const dispatchViewMode = view(Inputs.radio(["Day", "Week"], {value: "Week", label: "View"}))
 ```
 
 ```js
-Plot.plot({
-  title: `Day-ahead electricity prices vs gas break-even in Ukraine`,
-  subtitle: new Date(selectedDatePeaker).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"}),
-  caption: "Sources: Market Operator JSC, UEEX, Yahoo Finance (TTF). Break-even: gas reciprocating engine, heat rate 2.2",
-  marginLeft: 60,
-  marginRight: 30,
-  width: Math.min(width, 800),
-  height: 320,
-  x: {label: "Hour of Day", domain: [0, 24], ticks: 24},
-  y: {label: "UAH / MWh", domain: [0, 16000], grid: true},
-  marks: [
+const selectedDatePeaker = view(Inputs.date({label: dispatchViewMode === "Day" ? "Select date" : "Select week (any day)", value: lastDayPrevMonth}))
+```
+
+```js
+const weekStartPeaker = d3.utcMonday.floor(new Date(selectedDatePeaker))
+const weekEndPeaker = d3.utcMonday.offset(weekStartPeaker, 1)
+
+// Price cap lookup: "YYYY-MM-DD-H" → price_max, with day-level forward-fill
+// Cap varies by hour within a day (off-peak vs peak) and changes over time
+const cap_map = (() => {
+  const raw = new Map(
+    price_caps_raw.map(d => [
+      `${d.date.toISOString().slice(0, 10)}-${d.hour}`,
+      d.price_max
+    ])
+  )
+  if (!raw.size) return raw
+  const dates = [...new Set([...raw.keys()].map(k => k.slice(0, 10)))].sort()
+  const map = new Map()
+  const end = new Date()
+  let lastDayCaps = null
+  const cur = new Date(dates[0])
+  while (cur <= end) {
+    const ds = cur.toISOString().slice(0, 10)
+    if (raw.has(`${ds}-0`)) {
+      lastDayCaps = new Map()
+      for (let h = 0; h <= 24; h++) {
+        const v = raw.get(`${ds}-${h}`)
+        if (v !== undefined) lastDayCaps.set(h, v)
+      }
+    }
+    if (lastDayCaps) {
+      for (const [h, v] of lastDayCaps) map.set(`${ds}-${h}`, v)
+    }
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return map
+})()
+
+const hourly_ua_for_week = ua_hourly_with_be
+  .filter(d => d.date >= weekStartPeaker && d.date < weekEndPeaker)
+  .sort((a, b) => a.date - b.date || a.hour - b.hour)
+  .map(d => ({
+    ...d,
+    price_cap: cap_map.get(`${d.date.toISOString().slice(0, 10)}-${d.hour}`) ?? NaN,
+  }))
+
+const be_mkt_by_day = Array.from(
+  d3.rollup(hourly_ua_for_week, v => v[0].be_engine_mkt, d => d.date.toISOString().slice(0, 10)),
+  ([dateStr, be_engine_mkt]) => ({date: new Date(dateStr), be_engine_mkt})
+).filter(d => !isNaN(d.be_engine_mkt))
+
+const hourly_ua_for_day = hourly_ua_for_week
+  .filter(d => d.date.getTime() === new Date(selectedDatePeaker).getTime())
+  .sort((a, b) => a.hour - b.hour)
+```
+
+```js
+{
+  const sharedMarks = (data, dayData, beData, opts = {}) => [
     Plot.rect(
-      hourly_ua_for_date.filter(d => d.hour < 24 && d.price_uah > d.be_engine_mkt),
-      {x1: "hour", x2: d => d.hour + 1, y1: "be_engine_mkt", y2: "price_uah", fill: "#bae4bc", fillOpacity: 0.6}
+      data.filter(d => d.hour < 24 && d.price_uah > d.be_engine_mkt),
+      {...opts, x1: "hour", x2: d => d.hour + 1, y1: "be_engine_mkt", y2: "price_uah", fill: "#bae4bc", fillOpacity: 0.6}
     ),
-    Plot.lineY(hourly_ua_for_date, {
-      x: "hour", y: "price_uah",
+    Plot.lineY(data.filter(d => d.hour < 24), {
+      ...opts, x: "hour", y: "price_uah",
       stroke: "steelblue", strokeWidth: 2, curve: "step-after", tip: true,
     }),
-    Plot.ruleY([be_engine_mkt_day], {stroke: "steelblue", strokeDasharray: "4,4", strokeWidth: 1.5}),
-    Plot.ruleY([0]),
-    Plot.text([
-      {y: be_engine_mkt_day, label: "Break-even (UEEX)"},
-    ], {
-      x: 18, y: "y", text: "label",
-      textAnchor: "start", dx: 4, dy: -6,
-      fill: d => d.label.includes("UEEX") ? "steelblue" : "#e15759",
-      fontSize: 12,
+    Plot.ruleY(beData, {
+      ...opts, y: "be_engine_mkt",
+      stroke: "steelblue", strokeDasharray: "4,4", strokeWidth: 1.5,
     }),
-  ],
-})
+    Plot.lineY(data.filter(d => !isNaN(d.price_cap) && d.hour < 24), {
+      ...opts, x: "hour", y: "price_cap",
+      stroke: "orange", strokeDasharray: "4,4", strokeWidth: 1.5, curve: "step-after",
+    }),
+    Plot.text(
+      (() => {
+        const ref = dayData.find(d => d.hour === 20) ?? dayData[dayData.length - 1]
+        if (!ref) return []
+        return [
+          {y: ref.price_cap,     label: "max price cap", color: "orange",    ...(opts.fx ? {[opts.fx]: ref.date} : {})},
+          {y: ref.be_engine_mkt, label: "break-even price",          color: "steelblue", ...(opts.fx ? {[opts.fx]: ref.date} : {})},
+        ].filter(d => d.y != null && !isNaN(d.y))
+      })(),
+      {...(opts.fx ? {fx: opts.fx} : {}), x: 23, y: "y", text: "label", fill: "color",
+       textAnchor: "start", dx: 8, fontSize: 10, clip: false}
+    ),
+    Plot.ruleY([0]),
+  ]
+
+  const commonOpts = {
+    title: "Day-ahead electricity prices vs gas break-even in Ukraine",
+    caption: "Sources: Market Operator JSC, UEEX. Break-even: gas reciprocating engine, heat rate 2.2",
+    marginLeft: 60,
+    marginRight: 155,
+    width: Math.min(width, 800),
+    x: {label: "hour", domain: d3.range(0, 24), ticks: [0, 6, 12, 18, 23]},
+    y: {label: "UAH / MWh", domain: [0, 16500], grid: true},
+  }
+
+  const lastDateInWeek = d3.max(hourly_ua_for_week, d => +d.date)
+  const lastDayRows = hourly_ua_for_week.filter(d => +d.date === lastDateInWeek)
+
+  dispatchViewMode === "Day"
+    ? display(Plot.plot({
+        ...commonOpts,
+        subtitle: new Date(selectedDatePeaker).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric", timeZone: "UTC"}),
+        height: 320,
+        marks: sharedMarks(hourly_ua_for_day, hourly_ua_for_day,
+          hourly_ua_for_day.slice(0, 1).map(d => ({be_engine_mkt: d.be_engine_mkt})),
+          {}),
+      }))
+    : display(Plot.plot({
+        ...commonOpts,
+        subtitle: `Week of ${weekStartPeaker.toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric", timeZone: "UTC"})}`,
+        height: 320,
+        fx: {label: null, padding: 0.15, tickFormat: d => d.toLocaleDateString("en-US", {weekday: "short", day: "numeric", timeZone: "UTC"})},
+        marks: sharedMarks(hourly_ua_for_week, lastDayRows, be_mkt_by_day, {fx: "date"}),
+      }))
+}
 ```
 
-The day-ahead market price cap — currently set at UAH 15,000/MWh — is clearly visible as a ceiling on hourly prices. During the evening peak, when gas generators are most needed, prices frequently hit the cap. The break-even electricity price is the minimum the plant must earn per MWh sold to cover its gas bill: total delivered gas cost (commodity price plus transmission and distribution charges) multiplied by the plant's efficiency. Full calculation logic and assumptions are documented in the [source code](https://github.com/atsokol/energy-blog/blob/main/src/gas-peakers.md). 
+The day-ahead market price cap acts as a hard ceiling on hourly prices; during the evening peak, when gas generators are most needed, prices frequently hit it. The break-even electricity price is the minimum the plant must earn per MWh sold to cover its gas bill: total delivered gas cost (commodity price plus transmission and distribution charges) multiplied by the plant's efficiency. Full calculation logic and assumptions are documented in the [source code](https://github.com/atsokol/energy-blog/blob/main/src/gas-peakers.md). 
 
 ## Profitability profile: hours and margins
 
@@ -198,19 +291,19 @@ Plot.plot({
 })
 ```
 
-The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2025, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. In early 2026, profitable hours expanded across most of the day, driven by tighter system balance following generation capacity losses.
+The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2026, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. 
 
-The figures below show the evolution of profitable hours per week and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. The TTF import-parity scenario illustrates the hypothetical downside case of European gas prices.
+The figures below show the evolution of profitable hours per week and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. 
 
 ```js
-// Last completed week start (Sunday) — exclude the in-progress current week
-const lastFullWeek = d3.utcWeek.floor(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+// Last completed Monday–Sunday week — exclude any in-progress current week
+const lastFullWeek = d3.utcMonday.offset(d3.utcMonday.floor(new Date()), -1)
 ```
 
 ```js
 Plot.plot({
   title: "Number of profitable dispatch hours per week",
-  subtitle: `Calculated for gas engine reference plant based on UEEX gas price`, 
+  subtitle: `Calculated for gas engine reference plant based on UEEX gas price, ${sparkWindowSize}-week moving average`,
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 50,
   marginRight: 30,
@@ -220,9 +313,13 @@ Plot.plot({
   y: {nice: true, grid: true, label: "hours / week"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.lineY(profitable_weekly.filter(d => d.week <= lastFullWeek), {
+    Plot.dot(profitable_weekly.filter(d => d.week <= lastFullWeek), {
       x: d => d3.utcDay.offset(d.week, 6), y: "profitable_hours_mkt",
-      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom", tip: true,
+      stroke: "#f59e0b", r: 2, strokeOpacity: 0.35, tip: true,
+    }),
+    Plot.lineY(profitable_weekly_ma.filter(d => d.week <= lastFullWeek), {
+      x: d => d3.utcDay.offset(d.week, 6), y: "ma_hours",
+      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom",
     }),
   ],
 })
@@ -235,7 +332,7 @@ const operatingHours = view(Inputs.range([1, 12], {label: "Daily operating hours
 ```js
 Plot.plot({
   title: `Weekly average gross margin`,
-  subtitle: `Calculated for gas engine reference plant based on UEEX gas price`,
+  subtitle: `Calculated for gas engine reference plant based on UEEX gas price, ${sparkWindowSize}-week moving average`,
   caption: "Sources: Market Operator JSC, UEEX",
   marginLeft: 60,
   marginRight: 30,
@@ -245,16 +342,20 @@ Plot.plot({
   y: {nice: true, grid: true, label: "UAH / MWh"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
-    Plot.lineY(weekly_margin_top_n.filter(d => d.week <= lastFullWeek), {
+    Plot.dot(weekly_margin_top_n.filter(d => d.week <= lastFullWeek), {
       x: d => d3.utcDay.offset(d.week, 6), y: "avg_margin_mkt",
-      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom",
+      stroke: "#f59e0b", r: 2, strokeOpacity: 0.35,
       tip: {format: {y: d3.format(",.0f")}},
+    }),
+    Plot.lineY(weekly_margin_ma.filter(d => d.week <= lastFullWeek), {
+      x: d => d3.utcDay.offset(d.week, 6), y: "ma_margin",
+      stroke: "#f59e0b", strokeWidth: 2, curve: "catmull-rom",
     }),
   ],
 })
 ```
 
-This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. Gas costs are based on market prices (UEEX exchange prices and TTF import-parity); it does not reflect subsidised PSO gas prices available to certain generators, to assess market-based economics. It also does not account for balancing market revenues, which can add UAH 700–1,500/MWh at peak times under current cap structures, but carry activation and settlement risk from Ukrenergo, fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine evolves.
+This analysis measures market-level profitability signals for a gas reciprocating engine reference plant on the day-ahead market. Gas costs are based on market prices (UEEX exchange prices and TTF import-parity); it does not reflect subsidised PSO gas prices available to certain generators, to assess market-based economics. It also does not account for balancing market revenues, fixed costs and capital recovery. Translating gross margins into investment returns requires a full set of assumptions and a comprehensive financial model. These results should be interpreted as a directional signal of how gas peaker economics in Ukraine evolves.
 
 *This notebook updates automatically based on the most recently available data.*
 
@@ -401,7 +502,7 @@ const gas_weekly_agg = d3.flatRollup(
     if (isNaN(cb_tariff_uah_tcm)) return []
     const ttf_parity_uah_tcm = (ttf.price_eur_mwh + TTF_TRANSPORT) * HEAT_VAL * ttf.rate_eur + cb_tariff_uah_tcm
     return [{
-      week: d3.utcWeek.floor(d.date),
+      week: d3.utcMonday.floor(d.date),
       ueex_eur: d.gas_market_uah / HEAT_VAL / ttf.rate_eur,
       ttf_parity_eur: ttf_parity_uah_tcm / HEAT_VAL / ttf.rate_eur,
       ttf_spot_eur: ttf.price_eur_mwh,
@@ -436,15 +537,20 @@ const gas_discount_weekly = gas_weekly_agg.map(d => ({
 
 ```js
 // Hourly prices for all countries with gas costs joined
+// Ukraine uses UEEX domestic gas price; EU neighbours use TTF
 
 const prices_all = prices_hourly_DAM.map(d => {
   const dateKey = d.date.toISOString().slice(0, 10)
   const ttf = ttf_map.get(dateKey) ?? {}
   const eua = eua_map.get(dateKey) ?? {}
+  const ueex = ueex_map.get(dateKey)
   const isUA = d.country === "UA"
   const ttf_price = ttf.price_eur_mwh ?? NaN
   const eua_price = eua.price_eur ?? NaN
-  const fuel_cost = ttf_price * HEAT_RATE
+  const rate_eur = ttf.rate_eur ?? NaN
+  const ueex_eur = (ueex && !isNaN(rate_eur)) ? ueex.gas_market_uah / HEAT_VAL / rate_eur : NaN
+  const gas_price_eur = (isUA && !isNaN(ueex_eur)) ? ueex_eur : ttf_price
+  const fuel_cost = gas_price_eur * HEAT_RATE
   const spark_spread = d.price_dam - fuel_cost
   const clean_spark_spread = isUA ? spark_spread : spark_spread - EMISSION_FACTOR * eua_price
   return {...d, ttf_price, eua_price, fuel_cost, spark_spread, clean_spark_spread}
@@ -458,7 +564,7 @@ const spark_weekly_raw = d3.flatRollup(
   prices_all,
   v => d3.mean(v, d => d.clean_spark_spread),
   d => d.country,
-  d => d3.utcWeek.floor(d.date)
+  d => d3.utcMonday.floor(d.date)
 ).map(([country, week, value]) => ({country, week, value}))
 ```
 
@@ -556,7 +662,7 @@ const profitable_weekly = d3.flatRollup(
     avg_margin_mkt: d3.mean(v.filter(d => d.profitable_mkt), d => d.spread_mkt) ?? 0,
     avg_margin_ttf: d3.mean(v.filter(d => d.profitable_ttf), d => d.spread_ttf) ?? 0,
   }),
-  d => d3.utcWeek.floor(d.date)
+  d => d3.utcMonday.floor(d.date)
 ).map(([week, vals]) => ({week, ...vals}))
   .sort((a, b) => d3.ascending(a.week, b.week))
 ```
@@ -569,12 +675,14 @@ const weekly_margin_top_n = d3.flatRollup(
   v => {
     const days = d3.group(v, d => d.date.toISOString().slice(0, 10))
     const daily_margins = Array.from(days, ([, hours]) => {
-      const sorted = hours.filter(h => h.spread_mkt > 0)
+      const profitable_mkt = hours.filter(h => h.spread_mkt > 0)
+      const sorted = hours
         .sort((a, b) => b.spread_mkt - a.spread_mkt)
-        .slice(0, operatingHours)
-      const sorted_ttf = hours.filter(h => h.spread_ttf > 0)
+        .slice(0, Math.max(operatingHours, profitable_mkt.length))
+      const profitable_ttf = hours.filter(h => h.spread_ttf > 0)
+      const sorted_ttf = hours
         .sort((a, b) => b.spread_ttf - a.spread_ttf)
-        .slice(0, operatingHours)
+        .slice(0, Math.max(operatingHours, profitable_ttf.length))
       return {
         avg_margin_mkt: d3.mean(sorted, d => d.spread_mkt) ?? 0,
         avg_margin_ttf: d3.mean(sorted_ttf, d => d.spread_ttf) ?? 0,
@@ -585,9 +693,27 @@ const weekly_margin_top_n = d3.flatRollup(
       avg_margin_ttf: d3.mean(daily_margins, d => d.avg_margin_ttf),
     }
   },
-  d => d3.utcWeek.floor(d.date)
+  d => d3.utcMonday.floor(d.date)
 ).map(([week, vals]) => ({week, ...vals}))
   .sort((a, b) => d3.ascending(a.week, b.week))
+```
+
+```js
+// Moving average over weekly profitable hours (reactive to weeklyTrendWindow)
+
+const profitable_weekly_ma = profitable_weekly.map((d, i, arr) => {
+  const window = arr.slice(Math.max(0, i - (sparkWindowSize ?? 4) + 1), i + 1)
+  return {...d, ma_hours: d3.mean(window, w => w.profitable_hours_mkt)}
+})
+```
+
+```js
+// Moving average over weekly gross margin (reactive to weeklyTrendWindow)
+
+const weekly_margin_ma = weekly_margin_top_n.map((d, i, arr) => {
+  const window = arr.slice(Math.max(0, i - (sparkWindowSize ?? 4) + 1), i + 1)
+  return {...d, ma_margin: d3.mean(window, w => w.avg_margin_mkt)}
+})
 ```
 
 
@@ -624,6 +750,15 @@ const tariffs_raw = await d3.csv(
 ```
 
 
+
+```js
+// Day-ahead price caps (min/max) for Ukrainian energy systems
+
+const price_caps_raw = await d3.csv(
+  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/UA_price_caps.csv",
+  d3.autoType
+)
+```
 
 ```js
 // Electricity price data
