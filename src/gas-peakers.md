@@ -129,7 +129,7 @@ EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark sprea
 The figure below shows hourly day-ahead electricity prices in Ukraine alongside the break-even price for a gas reciprocating engine reference plant (~45% efficiency) based on the prevailing UEEX price. Hours where the electricity price exceeds the break-even are shaded green; the orange dashed line marks the day-ahead maximum price cap.
 
 ```js
-const MIN_FACET_WIDTH = 550
+const MIN_FACET_WIDTH = 800
 const dispatchViewMode = width < MIN_FACET_WIDTH
   ? "Day"
   : view(Inputs.radio(["Day", "Week"], {value: "Week", label: "View"}))
@@ -231,7 +231,7 @@ const hourly_ua_for_day = hourly_ua_for_week
     title: "Day-ahead electricity prices vs gas break-even in Ukraine",
     caption: "Sources: Market Operator JSC, UEEX. Break-even: gas reciprocating engine, heat rate 2.2",
     marginLeft: 60,
-    marginRight: 155,
+    marginRight: 100,
     width: Math.min(width, 800),
     x: {label: "hour", domain: d3.range(0, 24), ticks: [0, 6, 12, 18, 23]},
     y: {label: "UAH / MWh", domain: [0, 16500], grid: true},
