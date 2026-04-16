@@ -1,40 +1,44 @@
 #!/usr/bin/env node
 /**
  * render-slides.mjs
- * CLI: node scripts/render-slides.mjs <slug>
- *   or: npm run render <slug>
+ * CLI: node scripts/render-slides.mjs <slug> [md-file]
  *
- * Renders output/<slug>/slides.md → output/<slug>/slides.pdf via resvg + pdf-lib.
- * Edit slides.md first to adjust headings, remove slides, or reorder charts.
+ * Renders output/<slug>/<md-file> → output/<slug>/<pdf-file> via resvg + pdf-lib.
+ * md-file defaults to "slides.md"; the PDF name is derived by replacing .md with .pdf.
+ *
+ * Examples:
+ *   node scripts/render-slides.mjs gas-peakers
+ *   node scripts/render-slides.mjs gas-peakers slides-update.md
  */
 
 import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
-const slug = process.argv[2];
+const slug    = process.argv[2];
+const mdFile  = process.argv[3] ?? 'slides.md';
+const pdfFile = basename(mdFile, '.md') + '.pdf';
+
 if (!slug) {
-  console.error('Usage: node scripts/render-slides.mjs <slug>');
-  console.error('Example: node scripts/render-slides.mjs gas-peakers');
+  console.error('Usage: node scripts/render-slides.mjs <slug> [md-file]');
+  console.error('Example: node scripts/render-slides.mjs gas-peakers slides-update.md');
   process.exit(1);
 }
 
-const outDir = resolve(ROOT, 'output', slug);
-const slidesSrc = resolve(outDir, 'slides.md');
+const outDir   = resolve(ROOT, 'output', slug);
+const slidesSrc = resolve(outDir, mdFile);
 
 if (!existsSync(slidesSrc)) {
-  console.error(`✗ slides.md not found at output/${slug}/slides.md`);
-  console.error(`  Run first: npm run generate ${slug}`);
+  console.error(`✗ ${mdFile} not found at output/${slug}/${mdFile}`);
   process.exit(1);
 }
 
-console.log(`Rendering output/${slug}/slides.md → slides.pdf…`);
+console.log(`Rendering output/${slug}/${mdFile} → ${pdfFile}…`);
 
 const { renderToPdf } = await import('./lib/render-pdf.js');
-await renderToPdf({ outDir, rootDir: ROOT });
+await renderToPdf({ outDir, mdFile, pdfFile });
 
-console.log(`\n✓ PDF written to output/${slug}/slides.pdf`);
+console.log(`✓ PDF written to output/${slug}/${pdfFile}`);

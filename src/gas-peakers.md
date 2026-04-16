@@ -56,7 +56,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: d3.utcMonth.every(1), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "↑ premium\n↓ discount", tickFormat: d3.format(".0%")},
   color: {scheme: "RdYlGn", reverse: true},
   marks: [
@@ -129,7 +129,10 @@ EU neighbours (Hungary, Romania, Slovakia) maintained positive clean spark sprea
 The figure below shows hourly day-ahead electricity prices in Ukraine alongside the break-even price for a gas reciprocating engine reference plant (~45% efficiency) based on the prevailing UEEX price. Hours where the electricity price exceeds the break-even are shaded green; the orange dashed line marks the day-ahead maximum price cap.
 
 ```js
-const dispatchViewMode = view(Inputs.radio(["Day", "Week"], {value: "Week", label: "View"}))
+const MIN_FACET_WIDTH = 550
+const dispatchViewMode = width < MIN_FACET_WIDTH
+  ? "Day"
+  : view(Inputs.radio(["Day", "Week"], {value: "Week", label: "View"}))
 ```
 
 ```js
@@ -309,7 +312,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: d3.utcMonth.every(1), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "hours / week"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
@@ -338,7 +341,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: d3.utcMonth.every(1), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "UAH / MWh"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
