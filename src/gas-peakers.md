@@ -56,7 +56,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3), tickFormat: width < 500 ? d3.utcFormat("%Y") : (() => { const seen = new Set(); return d => { const y = d.getUTCFullYear(), m = d.getUTCMonth(); if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) } return d3.utcFormat("%b")(d) } })()},
   y: {nice: true, grid: true, label: "↑ premium\n↓ discount", tickFormat: d3.format(".0%")},
   color: {scheme: "RdYlGn", reverse: true},
   marks: [
@@ -312,7 +312,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3), tickFormat: width < 500 ? d3.utcFormat("%Y") : (() => { const seen = new Set(); return d => { const y = d.getUTCFullYear(), m = d.getUTCMonth(); if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) } return d3.utcFormat("%b")(d) } })()},
   y: {nice: true, grid: true, label: "hours / week"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
@@ -341,7 +341,7 @@ Plot.plot({
   marginRight: 30,
   width: Math.min(width, 800),
   height: 280,
-  x: {line: true, label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  x: {line: true, label: null, ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3), tickFormat: width < 500 ? d3.utcFormat("%Y") : (() => { const seen = new Set(); return d => { const y = d.getUTCFullYear(), m = d.getUTCMonth(); if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) } return d3.utcFormat("%b")(d) } })()},
   y: {nice: true, grid: true, label: "UAH / MWh"},
   marks: [
     Plot.ruleY([0], {stroke: "#333"}),
