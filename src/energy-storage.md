@@ -49,6 +49,13 @@ In this environment, flexibility becomes crucial. Energy storage can shift power
 The figure below illustrates the **day-ahead market (DAM) arbitrage** using the **TB4 (top-4 / bottom-4)** measure. TB4 is calculated as the difference between the average price of the four most expensive hours (typically the evening peak) and the average price of the four cheapest hours (often at night or mid-day), capturing the price spread.
 
 ```js
+const MIN_FACET_WIDTH_ARB = 600
+const dispatchViewModeArb = width < MIN_FACET_WIDTH_ARB
+  ? "Day"
+  : view(Inputs.radio(["Day", "Week"], {value: "Week", label: "View"}))
+```
+
+```js
 const selectedDate = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
 ```
 
@@ -72,51 +79,111 @@ const dam_top_avg = d3.mean(dam_top, d => d.price_dam)
 ```
 
 ```js
-Plot.plot({
-  title: `Illustration of arbitrage on the day-ahead market - ${countries.get(selectedCountry)}`,
-  subtitle: new Date(selectedDate).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"}),
-  caption: "Source: ENTSO-E, Market Operator JSC",
-  marginLeft: 60,
-  width: Math.min(width, 800),
-  height: 300,
-  x: {label: "Hour of Day", domain: [0, 24], ticks: 24},
-  y: {label: "Price (EUR/MWh)", grid: true, domain: [-30, 320]},
-  marks: [
-    Plot.rect([{x1: 0, x2: 24, y1: dam_bottom_avg, y2: dam_top_avg}], {
-      x1: "x1", x2: "x2", y1: "y1", y2: "y2",
-      fill: "lightyellow", fillOpacity: 0.3,
-    }),
-    Plot.ruleY([dam_bottom_avg], {stroke: "red", strokeDasharray: "4,4"}),
-    Plot.ruleY([dam_top_avg], {stroke: "green", strokeDasharray: "4,4"}),
-    Plot.link([{x: 1, y1: dam_bottom_avg, y2: dam_top_avg}], {
-      x: 12, y1: "y1", y2: "y2",
-      stroke: "gray", strokeWidth: 1.5,
-      markerStart: "arrow-reverse", markerEnd: "arrow",
-    }),
-    Plot.text([{x: 12, y: (dam_bottom_avg + dam_top_avg) / 2, label: `TB${storageDuration}`}], {
-      x: "x", y: "y", text: "label",
-      textAnchor: "start", dx: 5, fill: "currentColor", fontSize: 14,
-    }),
-    Plot.lineY(hourly_prices_for_date, {
-      x: "hour", y: "price_dam",
-      stroke: "steelblue", strokeWidth: 2, curve: "step-after",
-    }),
-    Plot.ruleY(dam_top, {
-      x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
-      stroke: "green", strokeWidth: 4, tip: true,
-    }),
-    Plot.ruleY(dam_bottom, {
-      x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
-      stroke: "red", strokeWidth: 4, tip: true,
-    }),
-    Plot.text([{x: 12, y: dam_top_avg, label: `average of top ${storageDuration} hours`}], {
-      x: "x", y: "y", text: "label", dy: -15, fill: "currentColor", fontSize: 14,
-    }),
-    Plot.text([{x: 12, y: dam_bottom_avg, label: `average of bottom ${storageDuration} hours`}], {
-      x: "x", y: "y", text: "label", dy: 15, fill: "currentColor", fontSize: 14,
-    }),
-  ],
-})
+const weekStartArb = d3.utcMonday.floor(new Date(selectedDate))
+const weekEndArb = d3.utcMonday.offset(weekStartArb, 1)
+
+const hourly_prices_for_week_arb = prices_hourly_DAM
+  .filter(d => d.date >= weekStartArb && d.date < weekEndArb && d.country === selectedCountry)
+  .sort((a, b) => d3.ascending(+a.date, +b.date) || d3.ascending(a.hour, b.hour))
+
+const dam_tb4_week = Array.from(
+  d3.group(hourly_prices_for_week_arb, d => d.date.toISOString().slice(0, 10)),
+  ([dateStr, rows]) => {
+    const date = new Date(dateStr)
+    const sorted = [...rows].sort((a, b) => a.price_dam - b.price_dam)
+    const bottom_hours = sorted.slice(0, storageDuration)
+    const top_hours = sorted.slice(-storageDuration)
+    return {date, bottom_avg: d3.mean(bottom_hours, d => d.price_dam), top_avg: d3.mean(top_hours, d => d.price_dam), bottom_hours, top_hours}
+  }
+).sort((a, b) => +a.date - +b.date)
+
+const dam_tb4_by_day = dam_tb4_week.map(({date, bottom_avg, top_avg}) => ({date, bottom_avg, top_avg}))
+const dam_top_hours_week = dam_tb4_week.flatMap(d => d.top_hours)
+const dam_bottom_hours_week = dam_tb4_week.flatMap(d => d.bottom_hours)
+```
+
+```js
+{
+  const subtitle_day = new Date(selectedDate).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"})
+  const subtitle_week = `Week of ${weekStartArb.toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric", timeZone: "UTC"})}`
+  const commonOpts = {
+    title: `Day-ahead market arbitrage — ${countries.get(selectedCountry)}`,
+    caption: "Source: ENTSO-E, Market Operator JSC",
+    marginLeft: 60,
+    width: Math.min(width, 800),
+    height: 300,
+  }
+  dispatchViewModeArb === "Day"
+    ? display(Plot.plot({
+        ...commonOpts,
+        subtitle: subtitle_day,
+        x: {label: "Hour of Day", domain: [0, 24], ticks: 24},
+        y: {label: "Price (EUR/MWh)", grid: true, domain: [-30, 320]},
+        marks: [
+          Plot.rect([{x1: 0, x2: 24, y1: dam_bottom_avg, y2: dam_top_avg}], {
+            x1: "x1", x2: "x2", y1: "y1", y2: "y2",
+            fill: "#bae4bc", fillOpacity: 0.4,
+          }),
+          Plot.ruleY([dam_bottom_avg], {stroke: "red", strokeDasharray: "4,4"}),
+          Plot.ruleY([dam_top_avg], {stroke: "green", strokeDasharray: "4,4"}),
+          Plot.link([{x: 1, y1: dam_bottom_avg, y2: dam_top_avg}], {
+            x: 12, y1: "y1", y2: "y2",
+            stroke: "gray", strokeWidth: 1.5,
+            markerStart: "arrow-reverse", markerEnd: "arrow",
+          }),
+          Plot.text([{x: 12, y: (dam_bottom_avg + dam_top_avg) / 2, label: `TB${storageDuration}`}], {
+            x: "x", y: "y", text: "label",
+            textAnchor: "start", dx: 5, fill: "currentColor", fontSize: 14,
+          }),
+          Plot.lineY(hourly_prices_for_date, {
+            x: "hour", y: "price_dam",
+            stroke: "steelblue", strokeWidth: 2, curve: "step-after",
+          }),
+          Plot.ruleY(dam_top, {
+            x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+            stroke: "green", strokeWidth: 4, tip: true,
+          }),
+          Plot.ruleY(dam_bottom, {
+            x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+            stroke: "red", strokeWidth: 4, tip: true,
+          }),
+          Plot.text([{x: 12, y: dam_top_avg, label: `average of top ${storageDuration} hours`}], {
+            x: "x", y: "y", text: "label", dy: -15, fill: "currentColor", fontSize: 14,
+          }),
+          Plot.text([{x: 12, y: dam_bottom_avg, label: `average of bottom ${storageDuration} hours`}], {
+            x: "x", y: "y", text: "label", dy: 15, fill: "currentColor", fontSize: 14,
+          }),
+        ],
+      }))
+    : display(Plot.plot({
+        ...commonOpts,
+        subtitle: subtitle_week,
+        x: {label: "hour of day", domain: [0, 24], ticks: [0, 6, 12, 18, 23], line: true},
+        y: {nice: true, label: "Price (EUR/MWh)", grid: true},
+        fx: {label: null, padding: 0.15, tickFormat: d => d.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short", timeZone: "UTC"})},
+        marks: [
+          Plot.rect(dam_tb4_by_day, {
+            fx: "date",
+            x1: 0, x2: 24, y1: "bottom_avg", y2: "top_avg",
+            fill: "#bae4bc", fillOpacity: 0.4,
+          }),
+          Plot.ruleY(dam_tb4_by_day, {fx: "date", y: "bottom_avg", stroke: "red", strokeDasharray: "4,4"}),
+          Plot.ruleY(dam_tb4_by_day, {fx: "date", y: "top_avg", stroke: "green", strokeDasharray: "4,4"}),
+          Plot.lineY(hourly_prices_for_week_arb, {
+            fx: "date", x: "hour", y: "price_dam",
+            stroke: "steelblue", strokeWidth: 2, curve: "step-after",
+          }),
+          Plot.ruleY(dam_top_hours_week, {
+            fx: "date", x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+            stroke: "green", strokeWidth: 4, tip: true,
+          }),
+          Plot.ruleY(dam_bottom_hours_week, {
+            fx: "date", x1: "hour", x2: d => d.hour + 1, y: d => d.price_dam,
+            stroke: "red", strokeWidth: 4, tip: true,
+          }),
+        ],
+      }))
+}
 ```
 
 The next figure shows the evolution of TB4 measure for Ukraine's day-ahead market over time. Each dot represents the daily price spread, while the moving average highlights the trend in arbitrage opportunities on the day-ahead market.
@@ -332,9 +399,6 @@ This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as 
 
 ---
 
-## Calculations annex
-
-#### Aggregate and transform data
 
 ```js
 const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 0))
@@ -342,7 +406,7 @@ const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date
 ```
 
 ```js
-const bandwidth = view(Inputs.range([0, 0.3], {label: "Select smoothing bandwidth", step: 0.02, value: 0.1}))
+const bandwidth = view(Inputs.range([0, 0.3], {label: "Select smoothing bandwidth", step: 0.02, value: 0.08}))
 ```
 
 ```js
@@ -391,7 +455,6 @@ const spread_BM_DAM_daily = aq.from(spread_BM_DAM_hourly)
   .objects()
 ```
 
-#### Electricity price data
 
 ```js
 // Raw DAM prices — from data_raw/
@@ -459,8 +522,6 @@ const prices_DAM_quantiles = aq.from(
   .orderby("year", "hour")
   .objects()
 ```
-
-#### Import libraries
 
 ```js
 import * as aq from "npm:arquero"

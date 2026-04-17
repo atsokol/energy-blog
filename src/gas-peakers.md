@@ -198,7 +198,7 @@ const hourly_ua_for_day = hourly_ua_for_week
   const sharedMarks = (data, dayData, beData, opts = {}) => [
     Plot.rect(
       data.filter(d => d.hour < 24 && d.price_uah > d.be_engine_mkt),
-      {...opts, x1: "hour", x2: d => d.hour + 1, y1: "be_engine_mkt", y2: "price_uah", fill: "#bae4bc", fillOpacity: 0.6}
+      {...opts, x1: "hour", x2: d => d.hour + 1, y1: "be_engine_mkt", y2: "price_uah", fill: "#bae4bc", fillOpacity: 0.4}
     ),
     Plot.lineY(data.filter(d => d.hour < 24), {
       ...opts, x: "hour", y: "price_uah",
@@ -253,7 +253,7 @@ const hourly_ua_for_day = hourly_ua_for_week
         ...commonOpts,
         subtitle: `Week of ${weekStartPeaker.toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric", timeZone: "UTC"})}`,
         height: 320,
-        fx: {label: null, padding: 0.15, tickFormat: d => d.toLocaleDateString("en-US", {weekday: "short", day: "numeric", timeZone: "UTC"})},
+        fx: {label: null, padding: 0.15, tickFormat: d => d.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short", timeZone: "UTC"})},
         marks: sharedMarks(hourly_ua_for_week, lastDayRows, be_mkt_by_day, {fx: "date"}),
       }))
 }
