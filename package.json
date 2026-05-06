@@ -7,27 +7,23 @@
     "dev": "observable preview",
     "clean": "observable clean",
     "setup": "npm install",
-    "make_slides": "node scripts/make_slides.mjs",
-    "render": "node scripts/render-slides.mjs",
-    "linkedin": "node scripts/gen-linkedin.mjs",
+    "generate-assets": "node .claude/skills/make-slides/scripts/generate-assets.mjs",
+    "render": "node .claude/skills/make-slides/scripts/render-slides.mjs",
     "bundle-flowmap": "esbuild scripts/flowmap-entry.js --bundle --format=esm --external:maplibre-gl --external:mapbox-gl --minify --outfile=src/components/flowmap-bundle.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39",
-    "@marp-team/marp-cli": "^4.0",
     "@observablehq/framework": "^1.13.0",
     "@observablehq/plot": "^0.6",
     "@resvg/resvg-js": "^2.6.2",
     "arquero": "^5",
     "d3": "^7",
     "d3-regression": "^1",
-    "jsdom": "^25",
     "pdf-lib": "^1.17.1"
   },
   "optionalDependencies": {
     "@resvg/resvg-js-darwin-x64": "^2.6.2",
-    "@rollup/rollup-darwin-arm64": "^4.60.1",
-    "@rollup/rollup-darwin-x64": "^4.60.1",
+    "@rollup/rollup-darwin-arm64": "^4.60.3",
+    "@rollup/rollup-darwin-x64": "^4.60.3",
     "@rollup/rollup-linux-x64-gnu": "^4.60.1"
   },
   "devDependencies": {

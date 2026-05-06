@@ -399,6 +399,9 @@ This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as 
 
 ---
 
+## Calculations annex
+
+#### Aggregate and transform data
 
 ```js
 const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 0))
@@ -455,6 +458,8 @@ const spread_BM_DAM_daily = aq.from(spread_BM_DAM_hourly)
   .objects()
 ```
 
+
+#### Electricity price data
 
 ```js
 // Raw DAM prices — from data_raw/
@@ -522,6 +527,8 @@ const prices_DAM_quantiles = aq.from(
   .orderby("year", "hour")
   .objects()
 ```
+
+#### Import libraries
 
 ```js
 import * as aq from "npm:arquero"

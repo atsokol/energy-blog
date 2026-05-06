@@ -4,8 +4,8 @@ dist/
 src/.observablehq/
 output/
 scripts/
-post analytics/
-CLAUDE.md 
-LINKEDIN_STYLE.md
-SLIDES_STYLE.md
-WRITING_STYLE.md
+analytics/
+CLAUDE.md
+docs/LINKEDIN_STYLE.md
+docs/SLIDES_STYLE.md
+docs/WRITING_STYLE.md

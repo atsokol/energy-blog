@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE \"npm run (make_slides|linkedin)\"; then if [ -z \"$ANTHROPIC_API_KEY\" ]; then echo \"[hook] ANTHROPIC_API_KEY is not set — legacy slide/LinkedIn scripts require it. Use /make-slides or /linkedin-post skills instead (no API key needed).\"; fi; fi'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd \"/Users/andrii/Documents/R files/_My projects/Energy analysis/energy-blog\" 2>/dev/null && if git diff --name-only HEAD 2>/dev/null | grep -q \"slides\\.md\"; then echo \"[hook] slides.md was modified — re-render PDF: npm run render <slug>\"; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}

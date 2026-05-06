@@ -294,6 +294,41 @@ Plot.plot({
 })
 ```
 
+The second heatmap below shows the same metric organised by calendar month instead of hour-of-day, revealing the seasonal pattern of positive-margin hours across years.
+
+```js
+Plot.plot({
+  title: "Seasonal profitability of gas reciprocating engine reference plant in Ukraine",
+  subtitle: "% of hours with positive gross margin by month (UEEX gas pricing)",
+  caption: "Sources: Market Operator JSC, UEEX",
+  marginLeft: 50,
+  marginRight: 30,
+  width: Math.min(width, 800),
+  height: 220,
+  x: {
+    label: "month",
+    domain: d3.range(1, 13),
+    tickFormat: d => d3.utcFormat("%b")(new Date(Date.UTC(2000, d - 1, 1))),
+  },
+  y: {label: null, reverse: true},
+  color: {scheme: "RdYlGn", domain: [0, 1], type: "linear", legend: true, tickFormat: d3.format(".0%")},
+  marks: [
+    Plot.cell(profitable_heatmap_monthly, {
+      x: "month", y: "year",
+      fill: "pct_profitable",
+      inset: 0.5,
+      fillOpacity: 0.8,
+    }),
+    ...(width > 400 ? [Plot.text(profitable_heatmap_monthly, {
+      x: "month", y: "year",
+      text: d => d3.format(".0%")(d.pct_profitable),
+      fill: d => d.pct_profitable < 0.25 || d.pct_profitable > 0.8 ? "white" : "#333",
+      fontSize: 9,
+    })] : []),
+  ],
+})
+```
+
 The heatmap reveals a structural shift in profitability. In 2022–2023, low price caps kept the reference plant below break-even for most of the day. By 2024–2026, the evening peak window (hours 17–22) reached near-100% profitability as caps were raised. 
 
 The figures below show the evolution of profitable hours per week and the average gross margin per profitable hour over time, illustrating the improving but volatile economics of gas peakers in Ukraine. 
@@ -643,7 +678,7 @@ const be_engine_ttf_day = hourly_ua_for_date.length > 0 ? hourly_ua_for_date[0].
 const profitable_heatmap = d3.flatRollup(
   ua_hourly_with_be.map(d => ({
     ...d,
-    year: String(d.date.getFullYear()),
+    year: String(d.date.getUTCFullYear()),
   })),
   v => ({
     pct_profitable: d3.mean(v, d => d.profitable_mkt ? 1 : 0),
@@ -652,6 +687,15 @@ const profitable_heatmap = d3.flatRollup(
   d => d.hour,
   d => d.year
 ).map(([hour, year, vals]) => ({hour, year, ...vals}))
+
+// Profitable hours heatmap by month/year: % hours per (month, year) with positive gross margin
+
+const profitable_heatmap_monthly = d3.flatRollup(
+  ua_hourly_with_be,
+  v => d3.mean(v, d => d.profitable_mkt ? 1 : 0),
+  d => d.date.getUTCMonth() + 1,
+  d => String(d.date.getUTCFullYear())
+).map(([month, year, pct_profitable]) => ({month, year, pct_profitable}))
 ```
 
 ```js

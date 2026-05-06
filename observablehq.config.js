@@ -8,5 +8,6 @@ export default {
     {name: "Economics of energy storage", path: "/energy-storage"},
     {name: "Renewables price capture", path: "/res-price-capture"},
     {name: "EV market in Ukraine", path: "/ev-market-ua"},
+    {name: "Cross-border electricity trade", path: "/cross-border-flows"},
   ]
 };

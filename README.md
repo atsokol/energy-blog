@@ -10,6 +10,7 @@ Interactive data analysis blog on Ukraine and EU energy markets, built with [Obs
 | Economics of energy storage in Ukraine | `/energy-storage` |
 | Renewables price capture | `/res-price-capture` |
 | EV market in Ukraine | `/ev-market-ua` |
+| Cross-border electricity trade | `/cross-border-flows` |
 
 ## Architecture
 
@@ -31,6 +32,36 @@ npm run dev      # preview at http://localhost:3000
 npm run build    # production build → dist/
 ```
 
+## Repo structure
+
+```
+src/
+  index.md                 # homepage
+  energy-storage.md
+  res-price-capture.md
+  gas-peakers.md
+  ev-market-ua.md
+  cross-border-flows.md
+  components/
+    countries.js           # shared Map: country code → name
+docs/
+  WRITING_STYLE.md         # prose voice, post structure, annex layout
+  CHARTS.md                # Observable Plot chart reference
+  LINKEDIN_STYLE.md        # LinkedIn post style guide
+  SLIDES_STYLE.md          # PDF slide deck style guide
+analytics/                 # LinkedIn analytics Excel exports
+output/                    # generated artifacts per post (gitignored)
+scripts/
+  generate-assets.mjs      # renders charts via Playwright, screenshots
+  render-slides.mjs        # assembles + renders PDF slide deck
+  lib/
+    render-pdf.js          # pdf-lib PDF assembly
+    screenshot-charts.js   # Playwright chart capture
+.claude/skills/            # Claude Code slash command skills
+.github/workflows/
+  deploy.yml               # builds + deploys on push or repository_dispatch
+```
+
 ## Adding a new post
 
 1. Prototype in R/Quarto (local scratchpad).
@@ -39,56 +70,35 @@ npm run build    # production build → dist/
 4. Register the page in `observablehq.config.js`.
 5. Push → auto-deploys via GitHub Actions.
 
-See [WRITING_STYLE.md](./WRITING_STYLE.md) for prose voice, chart conventions, and interactive control patterns.
+See [docs/WRITING_STYLE.md](./docs/WRITING_STYLE.md) for prose voice, chart conventions, and interactive control patterns. See [docs/CHARTS.md](./docs/CHARTS.md) for the Observable Plot chart reference.
+
+## Claude Code skills
+
+Five skills cover the full content lifecycle. Invoke with `/skill-name` in Claude Code.
+
+| Skill | What it does |
+|-------|-------------|
+| `/new-post` | Scaffold `src/<slug>.md` following writing and chart style guides |
+| `/linkedin-post` | Generate `output/<slug>/linkedin.md` with full style-guide enforcement |
+| `/make-slides` | Render charts via Playwright, write `slides.md`, assemble PDF |
+| `/update-post` | Refresh an existing post's LinkedIn + slides when new monthly data arrives |
+| `/post-analytics` | Read `analytics/` Excel files, compute engagement metrics, synthesise insights |
 
 ## Slide deck generation
 
-The `scripts/` pipeline converts any post into a PDF slide deck — without a browser. Charts are rendered from Observable JS in Node.js via JSDOM + `@observablehq/plot`, rasterised to PNG with `@resvg/resvg-js`, and assembled into a 16:9 PDF with `pdf-lib`. Marp is not used for rendering; `slides.md` uses Marp-compatible syntax so it can optionally be opened in Marp, but the PDF is produced by the custom pipeline.
-
-### Full pipeline (charts + slides + LinkedIn)
-
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run make_slides src/<slug>.md
+node .claude/skills/make-slides/scripts/generate-assets.mjs <slug>   # render charts via Playwright
+npm run render <slug>                                                  # assemble PDF from output/<slug>/slides.md
 ```
 
-This runs five steps:
-
-| Step | Output |
-|------|--------|
-| 1. Parse post | Extracts title and prose |
-| 2. Render charts | `output/<slug>/charts/*.svg` |
-| 3. Generate slide headers | Claude API → punchy one-line headers |
-| 4. Assemble slides | `output/<slug>/slides.md` |
-| 5. Render PDF | `output/<slug>/slides.pdf` |
-| + LinkedIn post | `output/<slug>/linkedin.md` |
-
-If `ANTHROPIC_API_KEY` is not set, steps 3 and the LinkedIn post are skipped (section headings are used as slide titles instead).
-
-### Re-render PDF after editing slides.md
-
-Edit `output/<slug>/slides.md` first (adjust headings, remove or reorder slides), then:
-
-```bash
-npm run render <slug>
-```
-
-### Generate LinkedIn post independently
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run linkedin <slug>
-```
-
-Use this if `make_slides` was run without the API key, or to regenerate the post.
+Charts are screenshotted from the live dev server via Playwright, then assembled into a 16:9 PDF with `pdf-lib` + `@resvg/resvg-js`.
 
 ### Output files
 
 ```
 output/<slug>/
-  charts/          SVG chart files (one per Plot.plot() call)
-  slides.md        Slide deck source (Marp-compatible format) — edit this before re-rendering
+  charts/          SVG/PNG chart files (rendered by Playwright)
+  slides.md        Slide deck source — edit this before re-rendering
   slides.pdf       Final PDF (1280×720 pt, 16:9)
   linkedin.md      LinkedIn post text
 ```
-
