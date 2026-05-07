@@ -49,7 +49,7 @@ Save to: `output/<slug>/linkedin-update-<mon><year>.md`
 
 Re-render charts with the latest data:
 ```bash
-npm run generate-assets <slug>
+node .claude/skills/make-slides/scripts/generate-assets.mjs <slug>
 ```
 
 Read `output/<slug>/slides.md` as a template for structure and ordering.

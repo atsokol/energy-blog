@@ -1,7 +1,7 @@
 ---
 description: Generate a LinkedIn post for a published blog article. Enforces the inventory of used openers, CTAs, and retired phrases from LINKEDIN_STYLE.md. No separate API call — generates natively.
 disable-model-invocation: true
-allowed-tools: Read Write Bash
+allowed-tools: Read Write Bash Agent
 ---
 
 # LinkedIn post
@@ -25,7 +25,7 @@ Use the Agent tool to draft the post. The subagent prompt must include:
 - The prose extracted from `src/<slug>.md`
 - The complete opener inventory, CTA inventory, and phrases-to-retire list from LINKEDIN_STYLE.md explicitly listed — the subagent must not reuse any item from these lists
 
-**Critical:** LINKEDIN_STYLE.md notes that none of the published posts include a closing question yet. This next post must be the FIRST. The closing question must be specific, technical, and answerable from the reader's own domain experience — not generic ("thoughts?").
+**Critical:** Check the `### Closing questions used` inventory in LINKEDIN_STYLE.md. If it reads "none yet", this post must be the first to include one. Do not repeat any question already listed. The closing question must be specific, technical, and answerable from the reader's own domain experience — not generic ("thoughts?"). After the post is approved, update the inventory in LINKEDIN_STYLE.md.
 
 ## Validation before writing
 

@@ -267,7 +267,7 @@ Plot.link([{x: 12, y1: bottom_avg, y2: top_avg}], {
 ### Country colors — always import, never hardcode inline
 
 ```js
-import {countries, colorDomain, colorRange} from "./components/countries.js"
+import {countries, countryColors, colorDomain, colorRange} from "./components/countries.js"
 ```
 
 Apply to a chart:

@@ -1,7 +1,7 @@
 ---
 description: Create or edit an Observable Framework interactive post in src/. Reads WRITING_STYLE.md and CHARTS.md before writing any code.
 disable-model-invocation: true
-allowed-tools: Read Write Edit Bash
+allowed-tools: Read Write Edit Bash Agent
 ---
 
 # New post

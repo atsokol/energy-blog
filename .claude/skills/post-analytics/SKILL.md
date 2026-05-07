@@ -21,9 +21,11 @@ Categories: Company size, Job title, Location, Company, Industry, Seniority.
 
 ## Workflow
 
-Use the Agent tool to run data extraction:
-
-> Delegate to subagent: "Run the script at `.claude/skills/post-analytics/read_analytics.py` using `python3 .claude/skills/post-analytics/read_analytics.py`. It reads all `.xlsx` files in `analytics/`, extracts metrics by label-matching in column A, and prints JSON. Return the full JSON output."
+Run data extraction directly:
+```bash
+python3 .claude/skills/post-analytics/read_analytics.py
+```
+This reads all `.xlsx` files in `analytics/`, extracts metrics by label-matching in column A, and prints JSON.
 
 Once you have the JSON, compute per-post:
 - Engagement rate = (Reactions + Comments + Reposts + Saves) / Impressions
