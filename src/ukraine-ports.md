@@ -214,7 +214,7 @@ const sankeyOperatorSet = new Set(sankeyOperators)
 
 ```js
 PortFlowSankey(sankeyRecords, {
-  width:       Math.min(width, 1000),
+  width:       Math.min(width, 800),
   height:      560,
   topCargos:   selectTopCargos,
   topPorts:    selectTopPorts,
