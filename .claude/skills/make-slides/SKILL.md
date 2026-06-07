@@ -24,7 +24,7 @@ node .claude/skills/make-slides/scripts/generate-assets.mjs <slug>
 
 This builds the site and screenshots every Observable Plot chart as a PNG, writing them to `output/<slug>/charts/`. Each PNG captures the **full figure element** — chart body, title, subtitle, color legend, and caption. Wait for it to complete before proceeding; it can take 1–2 minutes because the pipeline waits for all remote CSV data to finish loading (`networkidle`).
 
-**Step 2 — Generate `slides.md` natively (no API call):**
+**Step 2 — Generate `slides.md`:**
 
 Read the chart files: `ls output/<slug>/charts/`
 Read the prose from `src/<slug>.md` (ignore ` ```js ` blocks — focus on section headings and interpretation paragraphs).

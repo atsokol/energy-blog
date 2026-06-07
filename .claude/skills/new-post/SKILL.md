@@ -38,6 +38,7 @@ For prose:
 - [ ] Key terms bolded on first use
 - [ ] Methodological caveat before `---` separator
 - [ ] Calculations annex uses `####` subsections
+- [ ] **No chart mechanics in prose** — never write "the chart below shows X", "the map uses circles sized by Y", "blue = export, red = import", or any description of visual encoding. Section intros and interpretation paragraphs lead with the substantive finding; how the chart is built is self-evident or belongs in the subtitle/caption.
 
 Write to `src/<slug>.md`. If this is a new post, also add it to `observablehq.config.js` pages array.
 Confirm: "Run `npm run dev` to preview."

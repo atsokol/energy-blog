@@ -9,5 +9,6 @@ export default {
     {name: "Renewables price capture", path: "/res-price-capture"},
     {name: "EV market in Ukraine", path: "/ev-market-ua"},
     {name: "Cross-border electricity trade", path: "/cross-border-flows"},
+    {name: "Ukraine port sector", path: "/ukraine-ports"},
   ]
 };

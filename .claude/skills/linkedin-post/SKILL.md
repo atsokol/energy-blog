@@ -1,5 +1,5 @@
 ---
-description: Generate a LinkedIn post for a published blog article. Enforces the inventory of used openers, CTAs, and retired phrases from LINKEDIN_STYLE.md. No separate API call — generates natively.
+description: Generate a LinkedIn post for a published blog article. Enforces the inventory of used openers, CTAs, and retired phrases from LINKEDIN_STYLE.md. 
 disable-model-invocation: true
 allowed-tools: Read Write Bash Agent
 ---

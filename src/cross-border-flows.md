@@ -4,146 +4,97 @@ title: Ukraine's cross-border electricity trade
 
 # Ukraine's cross-border electricity trade
 
-Ukraine's electricity grid synchronised with ENTSO-E in March 2022, connecting it physically to its western neighbours for the first time. Since then, cross-border trade has grown alongside Ukraine's need for external supply under wartime conditions. The data reveal a market that operates broadly as intended at the aggregate level — but whose border-by-border mechanics are shaped as much by network physics as by commercial incentives.
+Ukraine's electricity grid synchronised with ENTSO-E in March 2022, connecting it physically to its EU neighbours. Since then, cross-border trade has grown alongside Ukraine's need for external supply under wartime conditions. The data reveal a market that operates broadly as intended at the aggregate level — but whose border-by-border mechanics are shaped as much by network physics as by commercial incentives.
 
-## Cross-border flows
+## Annual flow map
 
-Monthly **net flows** — exports minus imports — show Ukraine's overall position with each neighbouring system. Positive values indicate net electricity exported from Ukraine; negative values indicate net imports into Ukraine.
+Import volumes expanded through 2024, with Hungary emerging as the single largest supplier corridor; Slovakia, Poland, and Romania contributed more evenly as secondary inflow routes. In 2025 the direction of growth reversed: export flows increased markedly, narrowing the net import position and in some months approaching balance. By 2026 the import orientation reasserted itself. Throughout, inflows have arrived from the west and north-west while Ukraine's exports — when they materialise — flow predominantly to Moldova and Poland.
+
+```js
+const selectedFlowmapYear = view(Inputs.select(flowmap_years, {
+  label: "Year",
+  value: flowmap_years.at(-1),
+  format: d3.utcFormat("%Y"),
+}))
+```
+
+```js
+flowmapLegend()
+```
+
+```js
+{
+  const w = Math.min(width, 700), h = 460
+  const project = d3.geoMercator().fitExtent(
+    [[20, 20], [w - 20, h - 20]],
+    {type: "FeatureCollection", features: flowmap_country_features}
+  )
+  const geoPath = d3.geoPath(project)
+  const yearFlows = flowmap_annual.filter(d => +d.year === +selectedFlowmapYear)
+  const arrowColorFor = f => f.origin === "UA" ? EXPORT_COLOR : IMPORT_COLOR
+  const outflowColorFor = loc => loc.id === "UA" ? EXPORT_COLOR : IMPORT_COLOR
+  const inflowColorFor  = loc => loc.id === "UA" ? IMPORT_COLOR : EXPORT_COLOR
+  const fmt = d3.format(",.1f")
+  const chart = flowMap({
+    locations: flowmap_locations,
+    flows: yearFlows,
+    project: c => project(c),
+    width: w, height: h,
+    backgroundFeatures: flowmap_country_features,
+    geoPath,
+    arrowColor: arrowColorFor,
+    outColor: outflowColorFor,
+    inColor:  inflowColorFor,
+    showLabels: true,
+    labelFontSize: 13,
+    maxArrowWidth: 14,
+    maxCircleRadius: 30,
+    radiusDomain: [0, annualNodeMax],
+    widthDomain:  [0, annualFlowMax],
+    nodeTooltip: (l, t) => `<b>${l.name}</b><br>out: ${fmt(t.out)} GWh<br>in: ${fmt(t.in)} GWh`,
+    flowTooltip: (f, byId) => `<b>${byId.get(f.origin).name} → ${byId.get(f.dest).name}</b><br>${fmt(f.magnitude)} GWh`,
+  })
+  display(chart.node())
+}
+```
 
 ```js
 const startDate = view(Inputs.date({label: "Start date", value: "2024-01-01"}))
 ```
 
-```js
-Plot.plot({
-  title: "Monthly net cross-border flow by country — physical",
-  subtitle: "GWh, positive = net export from Ukraine (physical flows)",
-  caption: "Source: ENTSO-E Transparency Platform",
-  marginLeft: 55,
-  marginRight: 30,
-  width: Math.min(width, 800),
-  height: 320,
-  x: {
-    label: null,
-    line: true,
-    ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3),
-    tickFormat: width < 500
-      ? d3.utcFormat("%Y")
-      : (() => {
-          const seen = new Set()
-          return d => {
-            const y = d.getUTCFullYear(), m = d.getUTCMonth()
-            if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) }
-            return d3.utcFormat("%b")(d)
-          }
-        })(),
-  },
-  y: {domain: netYDomain, grid: true, label: "GWh"},
-  color: {legend: true, domain: [...borderLabels.keys()], range: [...borderColors.values()]},
-  marks: [
-    Plot.ruleY([0], {stroke: "#333"}),
-    Plot.barY(
-      monthly_net.filter(d => d.month >= new Date(startDate)),
-      Plot.stackY({
-        x: "month",
-        y: "net_gwh",
-        fill: "country",
-        interval: d3.utcMonth,
-        tip: {format: {x: d3.utcFormat("%b %Y"), fill: false, y: d => d3.format(".1f")(d)}},
-      })
-    ),
-  ],
-})
-```
-
-```js
-Plot.plot({
-  title: "Monthly net cross-border flow by country — scheduled",
-  subtitle: "GWh, positive = net export from Ukraine (commercial schedules)",
-  caption: "Source: ENTSO-E Transparency Platform",
-  marginLeft: 55,
-  marginRight: 30,
-  width: Math.min(width, 800),
-  height: 320,
-  x: {
-    label: null,
-    line: true,
-    ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3),
-    tickFormat: width < 500
-      ? d3.utcFormat("%Y")
-      : (() => {
-          const seen = new Set()
-          return d => {
-            const y = d.getUTCFullYear(), m = d.getUTCMonth()
-            if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) }
-            return d3.utcFormat("%b")(d)
-          }
-        })(),
-  },
-  y: {domain: netYDomain, grid: true, label: "GWh"},
-  color: {legend: true, domain: [...borderLabels.keys()], range: [...borderColors.values()]},
-  marks: [
-    Plot.ruleY([0], {stroke: "#333"}),
-    Plot.barY(
-      monthly_net_sched.filter(d => d.month >= new Date(startDate)),
-      Plot.stackY({
-        x: "month",
-        y: "net_gwh",
-        fill: "country",
-        interval: d3.utcMonth,
-        tip: {format: {x: d3.utcFormat("%b %Y"), fill: false, y: d => d3.format(".1f")(d)}},
-      })
-    ),
-  ],
-})
-```
-
-Ukraine has been a consistent net electricity importer since synchronisation, with commercial flows predominantly pointing inward. Slovakia and Hungary have been the largest net suppliers, reflecting their geographic position and interconnector capacity. Romania stands out as a border where flows in both directions are large relative to the net position, pointing to **transit activity** rather than straightforward bilateral trade.
-
-```js
-Plot.plot({
-  title: "Total net cross-border flow: scheduled vs physical",
-  subtitle: "GWh, all borders combined; positive = net export from Ukraine",
-  caption: "Source: ENTSO-E Transparency Platform",
-  marginLeft: 55,
-  marginRight: 15,
-  width: Math.min(width, 800),
-  height: 260,
-  x: {
-    label: null,
-    line: true,
-    ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3),
-    tickFormat: width < 500
-      ? d3.utcFormat("%Y")
-      : (() => {
-          const seen = new Set()
-          return d => {
-            const y = d.getUTCFullYear(), m = d.getUTCMonth()
-            if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) }
-            return d3.utcFormat("%b")(d)
-          }
-        })(),
-  },
-  y: {nice: true, grid: true, label: "GWh"},
-  marks: [
-    Plot.ruleY([0], {stroke: "#ccc"}),
-    Plot.lineY(total_net_comparison.filter(d => d.type === "Scheduled"), {
-      x: "month", y: "net",
-      stroke: "#4e79a7", strokeWidth: 2, curve: "catmull-rom",
-      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (scheduled)`}},
-    }),
-    Plot.lineY(total_net_comparison.filter(d => d.type === "Physical"), {
-      x: "month", y: "net",
-      stroke: "#f28e2b", strokeWidth: 2, strokeDasharray: "5,4", curve: "catmull-rom",
-      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (physical)`}},
-    }),
-  ],
-})
-```
-
 ## Commercial schedules by border
 
-Cross-border electricity trade is organised through **commercial schedules** — planned flows agreed between traders at day-ahead auctions. The chart below shows monthly scheduled import and export volumes alongside the net position for each border.
+**Commercial schedules** — planned flows agreed between traders at day-ahead auctions — reveal the commercial intent behind the physical flows. On the Slovakia and Hungary corridors, scheduled and physical positions track closely, confirming these are genuine bilateral supply relationships. Moldova and Romania diverge: scheduled volumes are modest, but physical flows regularly exceed them, the signature of **loop-flow effects** where electricity routed commercially through one interconnector physically transits a different border.
+
+```js
+const all_sched_flows = d3.flatRollup(
+  sched,
+  v => ({
+    export: d3.sum(v.filter(x => x.dir === "export"), x => x.scheduled) / 1e3,
+    import: d3.sum(v.filter(x => x.dir === "import"), x => x.scheduled) / 1e3,
+  }),
+  d => d.country,
+  d => d.month
+)
+  .flatMap(([country, month, {export: exp, import: imp}]) => [
+    {country, month, dir: "Export", gwh_signed: exp},
+    {country, month, dir: "Import", gwh_signed: -imp},
+  ])
+  .filter(d => d.month >= new Date(startDate))
+  .sort((a, b) => d3.ascending(a.month, b.month))
+```
+
+```js
+const all_sched_net = d3.flatRollup(
+  sched,
+  v => d3.sum(v, d => d.dir === "export" ? d.scheduled : -d.scheduled) / 1e3,
+  d => d.country,
+  d => d.month
+)
+  .map(([country, month, net]) => ({country, month, net}))
+  .filter(d => d.month >= new Date(startDate))
+  .sort((a, b) => d3.ascending(a.month, b.month))
+```
 
 ```js
 Plot.plot({
@@ -156,7 +107,7 @@ Plot.plot({
   height: 320,
   fx: {domain: [...borderLabels.keys()], label: null, tickFormat: d => borderLabels.get(d)},
   x: {label: null, ticks: d3.utcYear, tickFormat: d3.utcFormat("%Y")},
-  y: {nice: true, grid: true, label: "GWh"},
+  y: {nice: true, grid: false, label: "GWh"},
   color: {legend: true, domain: ["Export", "Import"], range: ["#85c47a", "#e8807f"]},
   marks: [
     Plot.ruleY([0], {stroke: "#ccc"}),
@@ -178,17 +129,212 @@ Plot.plot({
 })
 ```
 
-The gap between physical and scheduled flows is most pronounced at the Romania and Moldova borders, where physical flows frequently exceed commercial schedules. This is consistent with **loop-flow effects**: electricity routed commercially through one interconnector may physically transit a different border due to the AC network's impedance distribution. Romania therefore functions less as a bilateral export destination and more as a border where redistributed physical flows materialise.
+## Monthly flow maps
+
+The seasonal rhythm of import dependency is visible across the monthly sequence: Slovakia and Hungary sustain large inbound flows throughout winter, while Ukraine's own outbound positions to Poland and Moldova thin in the colder months. Summer months show a more balanced profile, with Ukraine occasionally posting net export positions on warmer, lower-demand days.
+
+```js
+flowmapLegend()
+```
+
+```js
+{
+  const cols = 3, rows = 4
+  const facetStart = new Date(Date.UTC(2025, 5, 1))
+  const facetEnd   = new Date(Date.UTC(2026, 5, 1))
+  const months = d3.utcMonths(facetStart, facetEnd)
+  const gap = 12
+  const cellW = Math.min(Math.floor((width - gap * (cols - 1)) / cols), 320), cellH = 220
+  const project = d3.geoMercator().fitExtent(
+    [[12, 12], [cellW - 12, cellH - 12]],
+    {type: "FeatureCollection", features: flowmap_country_features}
+  )
+  const geoPath = d3.geoPath(project)
+  const arrowColorFor = f => f.origin === "UA" ? EXPORT_COLOR : IMPORT_COLOR
+  const outflowColorFor = loc => loc.id === "UA" ? EXPORT_COLOR : IMPORT_COLOR
+  const inflowColorFor  = loc => loc.id === "UA" ? IMPORT_COLOR : EXPORT_COLOR
+  const fmt = d3.format(",.1f")
+  const grid = d3.create("div")
+    .style("display", "grid")
+    .style("grid-template-columns", `repeat(${cols}, ${cellW}px)`)
+    .style("grid-template-rows", `repeat(${rows}, auto)`)
+    .style("gap", `${gap}px`)
+  for (const m of months) {
+    const cell = grid.append("div")
+    cell.append("div")
+      .style("font", "12px sans-serif").style("font-weight", "600")
+      .style("padding", "2px 0 2px 4px")
+      .text(d3.utcFormat("%b %Y")(m))
+    const chart = flowMap({
+      locations: flowmap_locations,
+      flows: flowmap_monthly.filter(d => +d.month === +m),
+      project: c => project(c),
+      width: cellW, height: cellH,
+      backgroundFeatures: flowmap_country_features,
+      geoPath,
+      maxArrowWidth: 10, maxCircleRadius: 22,
+      arrowColor: arrowColorFor,
+      outColor: outflowColorFor,
+      inColor:  inflowColorFor,
+      radiusDomain: [0, globalNodeMax],
+      widthDomain:  [0, globalFlowMax],
+      nodeTooltip: (l, t) => `<b>${l.name}</b><br>out: ${fmt(t.out)} GWh<br>in: ${fmt(t.in)} GWh`,
+      flowTooltip: (f, byId) => `<b>${byId.get(f.origin).name} → ${byId.get(f.dest).name}</b><br>${fmt(f.magnitude)} GWh`,
+    })
+    cell.node().appendChild(chart.node())
+  }
+  display(grid.node())
+}
+```
+
+## Scheduled vs physical flows
+
+The charts below compare **net** flows (exports minus imports) as scheduled and physical. The shaded area marks the gap between the two: green where physical exceeds scheduled, red where scheduled exceeds physical.
+
+```js
+const total_net_comparison = [
+  ...d3.flatRollup(
+    sched,
+    v => d3.sum(v, d => d.dir === "export" ? d.scheduled : -d.scheduled) / 1e3,
+    d => d.month
+  ).map(([month, net]) => ({month, type: "Scheduled", net})),
+  ...d3.flatRollup(
+    flows,
+    v => d3.sum(v, d => d.dir === "export" ? d.amount : -d.amount) / 1e3,
+    d => d.month
+  ).map(([month, net]) => ({month, type: "Physical", net})),
+].filter(d => d.month >= new Date(startDate))
+  .sort((a, b) => d3.ascending(a.month, b.month))
+```
+
+```js
+// Paired rows (one per month) for differenceY — derived from total_net_comparison
+const net_total_paired = (() => {
+  const schedMap = new Map(
+    total_net_comparison.filter(d => d.type === "Scheduled").map(d => [+d.month, d.net])
+  )
+  return total_net_comparison
+    .filter(d => d.type === "Physical")
+    .map(d => ({month: d.month, sched: schedMap.get(+d.month) ?? 0, phys: d.net}))
+    .sort((a, b) => d3.ascending(a.month, b.month))
+})()
+```
+
+
+```js
+// Net flow by country: export − import, monthly
+const net_ctry_sched = d3.flatRollup(
+  sched.filter(d => d.month >= new Date(startDate)),
+  v => d3.sum(v, d => d.dir === "export" ? d.scheduled : -d.scheduled) / 1e3,
+  d => d.country, d => d.month
+).map(([country, month, net]) => ({country, month, net}))
+  .sort((a, b) => d3.ascending(a.month, b.month))
+
+const net_ctry_phys = d3.flatRollup(
+  flows.filter(d => d.month >= new Date(startDate)),
+  v => d3.sum(v, d => d.dir === "export" ? d.amount : -d.amount) / 1e3,
+  d => d.country, d => d.month
+).map(([country, month, net]) => ({country, month, net}))
+  .sort((a, b) => d3.ascending(a.month, b.month))
+
+const net_ctry_paired = (() => {
+  const schedMap = new Map(net_ctry_sched.map(d => [`${d.country}_${+d.month}`, d.net]))
+  return net_ctry_phys.map(d => ({
+    country: d.country, month: d.month,
+    sched: schedMap.get(`${d.country}_${+d.month}`) ?? 0,
+    phys: d.net,
+  })).sort((a, b) => d3.ascending(a.month, b.month))
+})()
+```
+
+```js
+Plot.plot({
+  title: "Net cross-border flow by country: scheduled vs physical",
+  subtitle: "GWh/month; positive = net export from Ukraine; shading = gap between scheduled and physical",
+  caption: "Source: ENTSO-E Transparency Platform",
+  marginLeft: 45,
+  marginRight: 10,
+  width,
+  height: 340,
+  fx: {domain: [...borderLabels.keys()], label: null, tickFormat: d => borderLabels.get(d)},
+  x: {label: null, ticks: d3.utcYear, tickFormat: d3.utcFormat("%Y")},
+  y: {nice: true, grid: false, label: "GWh"},
+  marks: [
+    Plot.ruleY([0], {stroke: "#ccc"}),
+    Plot.differenceY(net_ctry_paired, {
+      fx: "country", x: "month", y1: "sched", y2: "phys",
+      positiveFill: EXPORT_COLOR, negativeFill: IMPORT_COLOR, fillOpacity: 0.35,
+      curve: "monotone-x",
+    }),
+    Plot.lineY(net_ctry_sched, {
+      fx: "country", x: "month", y: "net",
+      stroke: "#4e79a7", strokeWidth: 1.5, curve: "monotone-x",
+      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (scheduled)`}},
+    }),
+    Plot.lineY(net_ctry_phys, {
+      fx: "country", x: "month", y: "net",
+      stroke: "#f28e2b", strokeWidth: 1.5, strokeDasharray: "5,4", curve: "monotone-x",
+      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (physical)`}},
+    }),
+  ],
+})
+```
+
+```js
+Plot.plot({
+  title: "Total net cross-border flow: scheduled vs physical",
+  subtitle: "GWh/month",
+  marginLeft: 55,
+  marginRight: 30,
+  width: Math.min(width, 800),
+  height: 200,
+  x: {label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
+  y: {nice: true, grid: false, label: "GWh"},
+  marks: [
+    Plot.ruleY([0], {stroke: "#ccc"}),
+    Plot.differenceY(net_total_paired, {
+      x: "month", y1: "sched", y2: "phys",
+      positiveFill: EXPORT_COLOR, negativeFill: IMPORT_COLOR, fillOpacity: 0.35,
+      curve: "catmull-rom",
+    }),
+    Plot.lineY(total_net_comparison.filter(d => d.type === "Scheduled"), {
+      x: "month", y: "net",
+      stroke: "#4e79a7", strokeWidth: 1.5, curve: "catmull-rom",
+      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (scheduled)`}},
+    }),
+    Plot.lineY(total_net_comparison.filter(d => d.type === "Physical"), {
+      x: "month", y: "net",
+     stroke: "#f28e2b", strokeWidth: 2, strokeDasharray: "5,4", curve: "catmull-rom",
+      tip: {format: {x: d3.utcFormat("%b %Y"), y: d => `${d3.format(".1f")(d)} GWh (physical)`}},
+    }),
+  ],
+})
+```
+
+The gap between physical and scheduled flows is most pronounced at the Romania and Moldova borders, where physical flows frequently exceed commercial schedules. This is consistent with loop-flow effects: electricity routed commercially through one interconnector may physically transit a different border due to the AC network's impedance distribution. Romania therefore functions less as a bilateral export destination and more as a border where redistributed physical flows materialise.
 
 ## Intraday and seasonal patterns
 
-The heatmap below shows average net flows — positive for net export from Ukraine — by hour of day and calendar month. Blue cells indicate net export; red indicates net import.
+Ukraine's generation mix — dominated by nuclear baseload and run-of-river hydro — produces a predictable intraday signature in cross-border flows. Overnight, when domestic demand falls below the minimum output of inflexible nuclear units, Ukraine becomes a net exporter. Midday and evening peaks reverse that position: demand rises faster than dispatchable capacity can respond, pulling in imports. This structural pattern persists across the year but is modulated by season.
 
 ```js
 const selectedYear = view(Inputs.select(["2024", "2025", "2026"], {
   label: "Year",
   value: "2025",
 }))
+```
+
+```js
+const heatmap_data = d3.flatRollup(
+  flows.filter(d => d.year === selectedYear),
+  v => d3.mean(v, d => d.dir === "export" ? d.amount : -d.amount),
+  d => d.hour_of_day,
+  d => d.month.getUTCMonth()
+)
+  .map(([h, m, avg_net]) => ({hour_of_day: h, month_name: MONTH_NAMES[m], month_idx: m, avg_net}))
+  .filter(d => !isNaN(d.avg_net))
+
+const hmMax = d3.max(heatmap_data, d => Math.abs(d.avg_net)) ?? 1
 ```
 
 ```js
@@ -215,36 +361,22 @@ Plot.plot({
 })
 ```
 
-The intraday pattern reveals a consistent structure: Ukraine tends toward net export in overnight hours, when nuclear and hydro generation runs ahead of low night-time demand, and net import during daytime peak hours. The seasonal baseline shifts with system stress: winter months show heavier net imports during peak hours as demand rises and hydro availability falls; summer shows a more balanced profile with lower overall import volumes.
+Winter months show the deepest peak-hour import pull — up to several hundred MW on average — as heating load compounds the midday demand spike while hydro reservoirs reach their seasonal nadir. Summer narrows that gap: lower overall demand and better hydro availability allow Ukraine to cover more of its own peak, occasionally posting a net export position across most hours of the day.
 
-## Interconnector capacity
+## Interconnector capacity and auction prices
 
-Cross-border flows are bounded by the **interconnector capacity** allocated at day-ahead auctions. ENTSO-E publishes both **capacity offered** — the amount made available — and **capacity allocated** — the amount actually cleared at auction. The charts below show allocated capacity for all borders combined, separately for import and export directions.
+Cross-border flows are bounded by the **interconnector capacity** allocated at day-ahead auctions. When demand for capacity exceeds what is offered, allocation reaches the ceiling and the interconnector — not commercial appetite — becomes the binding constraint on trade. On the Slovakia and Hungary import corridors, allocated capacity has repeatedly saturated the offered amount, confirming that physical limits, not weak commercial demand, cap Ukraine's import volumes on those borders.
 
 ```js
 Plot.plot({
-  title: "Interconnector allocated capacity — import into Ukraine",
+  title: "Allocated interconnector capacity — import into Ukraine",
   subtitle: "MW, average per hour per month; stacked by border country",
   caption: "Source: ENTSO-E Transparency Platform (JAO auction results)",
   marginLeft: 55,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 300,
-  x: {
-    label: null,
-    line: true,
-    ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3),
-    tickFormat: width < 500
-      ? d3.utcFormat("%Y")
-      : (() => {
-          const seen = new Set()
-          return d => {
-            const y = d.getUTCFullYear(), m = d.getUTCMonth()
-            if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) }
-            return d3.utcFormat("%b")(d)
-          }
-        })(),
-  },
+  x: {label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "MW (avg per hour)"},
   color: {legend: true, domain: [...borderLabels.keys()], range: [...borderColors.values()]},
   marks: [
@@ -265,28 +397,14 @@ Plot.plot({
 
 ```js
 Plot.plot({
-  title: "Interconnector allocated capacity — export from Ukraine",
+  title: "Allocated interconnector capacity — export from Ukraine",
   subtitle: "MW, average per hour per month; stacked by border country",
   caption: "Source: ENTSO-E Transparency Platform (JAO auction results)",
   marginLeft: 55,
   marginRight: 30,
   width: Math.min(width, 800),
   height: 300,
-  x: {
-    label: null,
-    line: true,
-    ticks: width < 500 ? d3.utcYear.every(1) : d3.utcMonth.every(3),
-    tickFormat: width < 500
-      ? d3.utcFormat("%Y")
-      : (() => {
-          const seen = new Set()
-          return d => {
-            const y = d.getUTCFullYear(), m = d.getUTCMonth()
-            if (m === 0 || !seen.has(y)) { seen.add(y); return d3.utcFormat("%b\n%Y")(d) }
-            return d3.utcFormat("%b")(d)
-          }
-        })(),
-  },
+  x: {label: null, ticks: d3.utcMonth.every(3), tickFormat: d => d.getUTCMonth() === 0 ? d3.utcFormat("%Y")(d) : d3.utcFormat("%b")(d)},
   y: {nice: true, grid: true, label: "MW (avg per hour)"},
   color: {legend: true, domain: [...borderLabels.keys()], range: [...borderColors.values()]},
   marks: [
@@ -305,22 +423,63 @@ Plot.plot({
 })
 ```
 
-Allocation rates vary substantially by border and direction. On the Slovakia and Hungary import corridors, allocated capacity has frequently reached or saturated offered capacity, confirming that the interconnector — not commercial demand — is the binding constraint in these directions. On the Poland corridor, capacity utilisation has been lower and more variable, reflecting smaller interconnector ratings and less persistent price differentials.
+Poland's corridor tells a different story: lower and more variable utilisation reflects both a smaller interconnector rating and less persistent price differentials between the two markets. When capacity is scarce and fully allocated, bidders drive prices up to the point where the interconnector's marginal value matches the cross-border price spread. The **weighted average weekly auction price** — clearing price weighted by allocated capacity — is the market's revealed estimate of that scarcity value.
 
-## Interconnector capacity auction prices
+```js
+const maWindow = view(Inputs.range([1, 12], {label: "Moving average (weeks)", step: 1, value: 4}))
+```
 
-When capacity is scarce and fully allocated, bidders drive prices up to the point where the interconnector's marginal value matches the price spread between the two markets. The **weighted average weekly auction price** — clearing price weighted by allocated capacity — is the market's revealed estimate of that scarcity value.
+```js
+const weekly_prices_flat = d3.flatRollup(
+  auction_raw,
+  v => {
+    const w = d3.sum(v, d => +d.cap_allocated_mw)
+    return {
+      weighted_price: w > 0 ? d3.sum(v, d => +d.price * +d.cap_allocated_mw) / w : null,
+      total_allocated: w,
+    }
+  },
+  d => d3.utcWeek.floor(new Date(d.date)),
+  d => (String(d.border).startsWith("UA-") ? "Export" : "Import"),
+  d => String(d.border).replace("UA-", "").replace("-UA", "")
+)
+  .map(([week, dir, country, {weighted_price, total_allocated}]) => ({
+    week, dir, country, weighted_price, total_allocated,
+  }))
+  .filter(d => ["HU", "PL", "RO", "SK"].includes(d.country)
+    && d.week >= new Date(startDate))
+  .sort((a, b) => d3.ascending(a.week, b.week))
+```
+
+```js
+const weekly_prices_ma = (() => {
+  const result = []
+  for (const [country, byDir] of d3.group(weekly_prices_flat, d => d.country, d => d.dir)) {
+    for (const [dir, rows] of byDir) {
+      const sorted = rows.filter(d => d.weighted_price != null)
+        .sort((a, b) => d3.ascending(a.week, b.week))
+      for (let i = maWindow - 1; i < sorted.length; i++) {
+        result.push({
+          ...sorted[i],
+          ma_price: d3.mean(sorted.slice(i - maWindow + 1, i + 1), d => d.weighted_price),
+        })
+      }
+    }
+  }
+  return result
+})()
+```
 
 ```js
 Plot.plot({
   title: "Weighted average weekly capacity auction prices",
-  subtitle: "€/MWh weighted by allocated capacity; gaps = weeks with zero allocation",
+  subtitle: `€/MWh weighted by allocated capacity; points = weekly values, line = ${maWindow}-week moving average`,
   caption: "Source: ENTSO-E Transparency Platform (JAO auction results)",
   marginLeft: 50,
   marginRight: 15,
   width: Math.min(width, 900),
   height: 320,
-  x: {label: null, line: true, ticks: d3.utcYear, tickFormat: d3.utcFormat("%Y")},
+  x: {label: null, ticks: d3.utcYear, tickFormat: d3.utcFormat("%Y")},
   y: {nice: true, grid: true, label: "€/MWh"},
   fx: {domain: ["HU", "PL", "RO", "SK"], label: null, tickFormat: d => borderLabels.get(d)},
   color: {
@@ -330,60 +489,28 @@ Plot.plot({
   },
   marks: [
     Plot.ruleY([0], {stroke: "#ccc"}),
-    Plot.lineY(weekly_prices_flat, {
+    Plot.dot(weekly_prices_flat.filter(d => d.weighted_price != null), {
       fx: "country",
       x: "week",
       y: "weighted_price",
-      stroke: "dir",
-      strokeWidth: 1.5,
-      curve: "monotone-x",
+      fill: "dir",
+      fillOpacity: 0.5,
+      r: 2.5,
       tip: {
         format: {
           x: d3.utcFormat("%-d %b %Y"),
-          stroke: false,
+          fill: false,
           y: d => d3.format(".1f")(d),
         },
       },
     }),
-  ],
-})
-```
-
-## DAM spread vs auction price
-
-If interconnector auctions are efficient, the clearing price should track the **day-ahead market (DAM) price spread** between Ukraine and the neighbouring country. Market participants bid up to the point where the expected gain from arbitrage equals the cost of capacity access. The chart below shows the net spread: the flow-weighted DAM spread minus the auction price paid for capacity.
-
-```js
-const minScheduled = view(Inputs.range([0, 20], {label: "Min weekly scheduled volume (GWh)", step: 0.05, value: 0.05}))
-```
-
-```js
-Plot.plot({
-  title: "Net spread after capacity auction cost",
-  subtitle: "€/MWh; flow-weighted DA spread (direction-adjusted) minus auction price paid for capacity",
-  caption: "Source: ENTSO-E Transparency Platform",
-  marginLeft: 50,
-  marginRight: 15,
-  width: Math.min(width, 900),
-  height: 320,
-  x: {label: null, line: true, ticks: d3.utcYear, tickFormat: d3.utcFormat("%Y")},
-  y: {nice: true, grid: true, label: "€/MWh"},
-  fx: {domain: ["HU", "PL", "RO", "SK"], label: null, tickFormat: d => borderLabels.get(d)},
-  color: {
-    legend: true,
-    domain: ["Import", "Export"],
-    range: ["steelblue", "firebrick"],
-  },
-  marks: [
-    Plot.ruleY([0], {stroke: "#ccc"}),
-    Plot.lineY(weekly_net_spreads.map(d => ({...d, net_spread: d.total_scheduled_gwh >= minScheduled ? d.net_spread : null})), {
+    Plot.lineY(weekly_prices_ma, {
       fx: "country",
       x: "week",
-      y: "net_spread",
+      y: "ma_price",
       stroke: "dir",
-      strokeWidth: 1.5,
+      strokeWidth: 2,
       curve: "monotone-x",
-      tip: {format: {x: d3.utcFormat("%-d %b %Y"), stroke: false, y: d => d3.format(".1f")(d)}},
     }),
   ],
 })
@@ -395,12 +522,14 @@ This analysis uses physical and scheduled flow data from the ENTSO-E Transparenc
 
 ---
 
-## Calculations annex
+```js
+// Calculations annex
+```
 
-#### Physical and scheduled flows
+#### 
 
 ```js
-// Physical cross-border flows (CET timestamps stored as UTC via autoType)
+// Physical cross-border flows 
 const flows_raw = await d3.csv(
   "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/transm_phys_EU.csv",
   d3.autoType
@@ -423,27 +552,9 @@ const auction_raw = await d3.csv(
 )
 ```
 
-#### DAM price data
 
 ```js
-// EU DAM prices: hour is CET delivery hour stored as nominal UTC
-const dam_eu_raw = await d3.csv(
-  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_EU.csv",
-  d3.autoType
-)
-```
-
-```js
-// UA DAM prices: hour is EET delivery hour stored as nominal UTC (1h ahead of CET)
-const dam_ua_raw = await d3.csv(
-  "https://raw.githubusercontent.com/atsokol/energy-data-ua-eu/refs/heads/main/data/data_raw/DAM_UA.csv",
-  d3.autoType
-)
-```
-
-#### Aggregate and transform data
-
-```js
+// Aggregate and transform data
 const flows = flows_raw
   .filter(d => d.from_country === "UA" || d.to_country === "UA")
   .map(d => {
@@ -533,190 +644,155 @@ const capacity_all_monthly = d3.flatRollup(
   .sort((a, b) => d3.ascending(a.month, b.month))
 ```
 
+
 ```js
-// Shared y-domain ensures physical and scheduled net charts are directly comparable
-function stackedBarExtent(data) {
-  const byMonth = d3.rollup(data, v => v, d => d.month)
-  let lo = 0, hi = 0
-  for (const vals of byMonth.values()) {
-    lo = Math.min(lo, d3.sum(vals.filter(d => d.net_gwh < 0), d => d.net_gwh))
-    hi = Math.max(hi, d3.sum(vals.filter(d => d.net_gwh > 0), d => d.net_gwh))
+// Flow map
+import {flowMap} from "./components/d3-flowmap.js"
+import {feature} from "npm:topojson-client@3"
+```
+
+```js
+// Natural Earth attributes Crimea to Russia — re-attach as a Ukraine-styled feature
+const _world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
+const _flowmapCountryIds = new Set(["804", "616", "348", "703", "642", "498"])  // UA, PL, HU, SK, RO, MD
+const _all_countries = feature(_world, _world.objects.countries).features
+const _russia = _all_countries.find(f => String(f.id) === "643")
+const _crimea_point = [34.0, 45.3]
+const _crimea_rings = _russia?.geometry?.type === "MultiPolygon"
+  ? _russia.geometry.coordinates.find(rings =>
+      d3.geoContains({type: "Polygon", coordinates: rings}, _crimea_point))
+  : null
+const _crimea_feature = _crimea_rings
+  ? {type: "Feature", id: "ua-crimea", properties: {name: "Crimea"},
+     geometry: {type: "Polygon", coordinates: _crimea_rings}}
+  : null
+const flowmap_country_features = [
+  ..._all_countries.filter(f => _flowmapCountryIds.has(String(f.id))),
+  ...(_crimea_feature ? [_crimea_feature] : []),
+]
+```
+
+```js
+// labelDir: compass direction for country label, chosen to avoid overlapping arrows
+const flowmap_locations = [
+  {id: "UA", lon: 31.0, lat: 49.0, name: "Ukraine",  labelDir: "N"},
+  {id: "PL", lon: 19.5, lat: 51.5, name: "Poland",   labelDir: "NW"},
+  {id: "SK", lon: 19.5, lat: 48.7, name: "Slovakia", labelDir: "W"},
+  {id: "HU", lon: 19.0, lat: 47.2, name: "Hungary",  labelDir: "SW"},
+  {id: "RO", lon: 25.0, lat: 45.9, name: "Romania",  labelDir: "SW"},
+  {id: "MD", lon: 29.1, lat: 46.9, name: "Moldova",  labelDir: "E"},
+]
+```
+
+```js
+const flowmap_monthly = d3.flatRollup(
+  sched,
+  v => d3.sum(v, d => d.scheduled) / 1e3,
+  d => d.month,
+  d => d.country,
+  d => d.dir,
+)
+  .map(([month, country, dir, magnitude]) => ({
+    month, country, dir, magnitude,
+    origin: dir === "export" ? "UA" : country,
+    dest:   dir === "export" ? country : "UA",
+  }))
+  .filter(d => d.magnitude > 0)
+  .sort((a, b) => d3.ascending(a.month, b.month))
+```
+
+```js
+// Locked scales so all monthly facets are visually comparable
+const {globalNodeMax, globalFlowMax} = (() => {
+  let nodeMax = 0, flowMax = 0
+  for (const monthFlows of d3.group(flowmap_monthly, d => +d.month).values()) {
+    const t = new Map(flowmap_locations.map(l => [l.id, {in: 0, out: 0}]))
+    for (const f of monthFlows) {
+      t.get(f.origin).out += f.magnitude
+      t.get(f.dest).in    += f.magnitude
+      flowMax = Math.max(flowMax, f.magnitude)
+    }
+    for (const v of t.values()) nodeMax = Math.max(nodeMax, v.in, v.out)
   }
-  return [lo, hi]
-}
-const physExtent = stackedBarExtent(monthly_net.filter(d => d.month >= new Date(startDate)))
-const schedExtent = stackedBarExtent(monthly_net_sched.filter(d => d.month >= new Date(startDate)))
-const netYDomain = d3.scaleLinear()
-  .domain([Math.min(physExtent[0], schedExtent[0]), Math.max(physExtent[1], schedExtent[1])])
-  .nice().domain()
+  return {globalNodeMax: nodeMax, globalFlowMax: flowMax}
+})()
 ```
 
 ```js
-const total_net_comparison = [
-  ...d3.flatRollup(
-    sched,
-    v => d3.sum(v, d => d.dir === "export" ? d.scheduled : -d.scheduled) / 1e3,
-    d => d.month
-  ).map(([month, net]) => ({month, type: "Scheduled", net})),
-  ...d3.flatRollup(
-    flows,
-    v => d3.sum(v, d => d.dir === "export" ? d.amount : -d.amount) / 1e3,
-    d => d.month
-  ).map(([month, net]) => ({month, type: "Physical", net})),
-].filter(d => d.month >= new Date(startDate))
-  .sort((a, b) => d3.ascending(a.month, b.month))
-```
-
-```js
-const all_sched_flows = d3.flatRollup(
+const flowmap_annual = d3.flatRollup(
   sched,
-  v => ({
-    export: d3.sum(v.filter(x => x.dir === "export"), x => x.scheduled) / 1e3,
-    import: d3.sum(v.filter(x => x.dir === "import"), x => x.scheduled) / 1e3,
-  }),
+  v => d3.sum(v, d => d.scheduled) / 1e3,
+  d => d3.utcYear.floor(d.month),
   d => d.country,
-  d => d.month
+  d => d.dir,
 )
-  .flatMap(([country, month, {export: exp, import: imp}]) => [
-    {country, month, dir: "Export", gwh_signed: exp},
-    {country, month, dir: "Import", gwh_signed: -imp},
-  ])
-  .filter(d => d.month >= new Date(startDate))
-  .sort((a, b) => d3.ascending(a.month, b.month))
-```
-
-```js
-const all_sched_net = d3.flatRollup(
-  sched,
-  v => d3.sum(v, d => d.dir === "export" ? d.scheduled : -d.scheduled) / 1e3,
-  d => d.country,
-  d => d.month
-)
-  .map(([country, month, net]) => ({country, month, net}))
-  .filter(d => d.month >= new Date(startDate))
-  .sort((a, b) => d3.ascending(a.month, b.month))
-```
-
-```js
-const heatmap_data = d3.flatRollup(
-  flows.filter(d => d.year === selectedYear),
-  v => d3.mean(v, d => d.dir === "export" ? d.amount : -d.amount),
-  d => d.hour_of_day,
-  d => d.month.getUTCMonth()
-)
-  .map(([h, m, avg_net]) => ({hour_of_day: h, month_name: MONTH_NAMES[m], month_idx: m, avg_net}))
-  .filter(d => !isNaN(d.avg_net))
-
-const hmMax = d3.max(heatmap_data, d => Math.abs(d.avg_net)) ?? 1
-```
-
-```js
-const weekly_prices_flat = d3.flatRollup(
-  auction_raw,
-  v => {
-    const w = d3.sum(v, d => +d.cap_allocated_mw)
-    return {
-      weighted_price: w > 0 ? d3.sum(v, d => +d.price * +d.cap_allocated_mw) / w : null,
-      total_allocated: w,
-    }
-  },
-  d => d3.utcWeek.floor(new Date(d.date)),
-  d => (String(d.border).startsWith("UA-") ? "Export" : "Import"),
-  d => String(d.border).replace("UA-", "").replace("-UA", "")
-)
-  .map(([week, dir, country, {weighted_price, total_allocated}]) => ({
-    week, dir, country, weighted_price, total_allocated,
+  .map(([year, country, dir, magnitude]) => ({
+    year, country, dir, magnitude,
+    origin: dir === "export" ? "UA" : country,
+    dest:   dir === "export" ? country : "UA",
   }))
-  .filter(d => ["HU", "PL", "RO", "SK"].includes(d.country)
-    && d.week >= new Date(startDate))
-  .sort((a, b) => d3.ascending(a.week, b.week))
+  .filter(d => d.magnitude > 0)
+  .sort((a, b) => d3.ascending(a.year, b.year))
 ```
 
 ```js
-// EU prices use CET nominal UTC; UA prices use EET nominal UTC (1h ahead), shifted back to align
-const dam_lookup = new Map([
-  ...dam_eu_raw
-    .filter(d => +d.price_eur !== 0)
-    .map(d => [`${+new Date(d.hour)}_${String(d.country).toUpperCase()}`, +d.price_eur]),
-  ...dam_ua_raw
-    .filter(d => +d.price_eur_mwh !== 0)
-    .map(d => [`${+new Date(d.hour) - 3_600_000}_uaips`, +d.price_eur_mwh]),
-])
+const flowmap_years = [...new Set(flowmap_annual.map(d => +d.year))]
+  .sort((a, b) => a - b)
+  .map(t => new Date(t))
 ```
 
 ```js
-const spread_records = sched_raw
-  .filter(d => d.from_country === "UA" || d.to_country === "UA")
-  .flatMap(d => {
-    const neighbor = d.from_country === "UA" ? d.to_country : d.from_country
-    if (!["HU", "PL", "RO", "SK"].includes(neighbor)) return []
-    const scheduled = +d.scheduled_mw
-    if (!(scheduled > 0)) return []
-    const t = +new Date(d.hour)
-    const price_UA = dam_lookup.get(`${t}_uaips`)
-    const price_nb = dam_lookup.get(`${t}_${neighbor}`)
-    if (price_UA == null || price_nb == null) return []
-    const dir = d.from_country === "UA" ? "Export" : "Import"
-    const spread = dir === "Import" ? price_UA - price_nb : price_nb - price_UA
-    return [{week: d3.utcWeek.floor(new Date(d.hour)), country: neighbor, dir, spread, scheduled}]
-  })
-
-const weekly_spreads = d3.flatRollup(
-  spread_records,
-  v => {
-    const w = d3.sum(v, d => d.scheduled)
-    return {
-      weighted_spread: d3.sum(v, d => d.spread * d.scheduled) / w,
-      total_scheduled_gwh: w / 1000,
+// Locked scales for the annual map (yearly sums are an order of magnitude larger than monthly)
+const {annualNodeMax, annualFlowMax} = (() => {
+  let nodeMax = 0, flowMax = 0
+  for (const yearFlows of d3.group(flowmap_annual, d => +d.year).values()) {
+    const t = new Map(flowmap_locations.map(l => [l.id, {in: 0, out: 0}]))
+    for (const f of yearFlows) {
+      t.get(f.origin).out += f.magnitude
+      t.get(f.dest).in    += f.magnitude
+      flowMax = Math.max(flowMax, f.magnitude)
     }
-  },
-  d => d.week,
-  d => d.country,
-  d => d.dir
-)
-  .map(([week, country, dir, {weighted_spread, total_scheduled_gwh}]) => ({
-    week, country, dir, weighted_spread, total_scheduled_gwh,
-  }))
-  .filter(d => d.week >= new Date(startDate))
-  .sort((a, b) => d3.ascending(a.week, b.week))
-
-const auction_price_lookup = new Map(
-  weekly_prices_flat.map(d => [`${+d.week}_${d.country}_${d.dir}`, d.weighted_price])
-)
-
-const weekly_net_spreads = weekly_spreads
-  .map(d => {
-    const auction = auction_price_lookup.get(`${+d.week}_${d.country}_${d.dir}`)
-    return auction != null ? {...d, net_spread: d.weighted_spread - auction} : null
-  })
-  .filter(d => d !== null)
+    for (const v of t.values()) nodeMax = Math.max(nodeMax, v.in, v.out)
+  }
+  return {annualNodeMax: nodeMax, annualFlowMax: flowMax}
+})()
 ```
 
 ```js
+const EXPORT_COLOR = "#85c47a"
+const IMPORT_COLOR = "#e8807f"
+const flowmapLegend = () => html`<div style="display: flex; gap: 18px; align-items: center; font: 13px sans-serif; margin: 4px 0 8px;">
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <span style="display: inline-block; width: 14px; height: 14px; background: ${EXPORT_COLOR}; border-radius: 2px;"></span>
+    Export from Ukraine
+  </div>
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <span style="display: inline-block; width: 14px; height: 14px; background: ${IMPORT_COLOR}; border-radius: 2px;"></span>
+    Import into Ukraine
+  </div>
+</div>`
+```
+
+
+```js
+// Labels and constants
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 ```
 
-#### Import libraries
-
 ```js
-import {countries, countryColors} from "./components/countries.js"
-```
-
-```js
-// Extends standard country palette with Moldova (not in countries.js)
 const borderLabels = new Map([
-  ["HU", countries.get("HU")],
+  ["HU", "Hungary"],
   ["MD", "Moldova"],
-  ["PL", countries.get("PL")],
-  ["RO", countries.get("RO")],
-  ["SK", countries.get("SK")],
+  ["PL", "Poland"],
+  ["RO", "Romania"],
+  ["SK", "Slovakia"],
 ])
 
 const borderColors = new Map([
-  ["HU", countryColors.get("HU")],
+  ["HU", "#e8898a"],
   ["MD", "#b08ece"],
-  ["PL", countryColors.get("PL")],
-  ["RO", countryColors.get("RO")],
-  ["SK", countryColors.get("SK")],
+  ["PL", "#7dadc9"],
+  ["RO", "#9dceca"],
+  ["SK", "#82c47a"],
 ])
 ```
