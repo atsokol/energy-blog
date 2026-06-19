@@ -122,13 +122,34 @@ export function PortFlowSankey(data, {
       const downstreamPorts = d.id.startsWith("c:")
         ? new Set(links.filter(l => l.source === d).map(l => l.target))
         : null;
+
+      // Build the set of nodes that share a highlighted flow with the hovered node
+      const connectedNodes = new Set([d]);
+      if (downstreamPorts) {
+        downstreamPorts.forEach(p => connectedNodes.add(p));
+        links.forEach(l => {
+          if (downstreamPorts.has(l.source) && l.cargo === d.name) connectedNodes.add(l.target);
+        });
+      } else {
+        links.forEach(l => {
+          if (l.source === d) connectedNodes.add(l.target);
+          if (l.target === d) connectedNodes.add(l.source);
+        });
+      }
+
       linkPath.attr("stroke-opacity", l => {
         if (l.source === d || l.target === d) return 0.7;
         if (downstreamPorts && downstreamPorts.has(l.source) && l.cargo === d.name) return 0.7;
         return 0.05;
       });
+      nodeRect.attr("fill-opacity", n => connectedNodes.has(n) ? 0.85 : 0.15);
+      nodeText.attr("opacity", n => connectedNodes.has(n) ? 1 : 0.2);
     })
-    .on("mouseleave", () => linkPath.attr("stroke-opacity", 0.35));
+    .on("mouseleave", () => {
+      linkPath.attr("stroke-opacity", 0.35);
+      nodeRect.attr("fill-opacity", 0.85);
+      nodeText.attr("opacity", 1);
+    });
 
   nodeRect.append("title")
     .text(d => `${d.name}\n${d3.format(",.0f")(d.value)} ${valueLabel}`);

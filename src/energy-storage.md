@@ -56,7 +56,7 @@ const dispatchViewModeArb = width < MIN_FACET_WIDTH_ARB
 ```
 
 ```js
-const selectedDate = view(Inputs.date({label: "Select date", value: lastDayPrevMonth}))
+const selectedDate = view(Inputs.date({label: "Select date", value: lastFullWeek}))
 ```
 
 ```js
@@ -406,6 +406,8 @@ This analysis focuses on market-level price signals (TB4 and BM-DAM spreads) as 
 ```js
 const lastDayPrevMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 0))
   .toISOString().split("T")[0]
+
+const lastFullWeek = d3.utcMonday.offset(d3.utcMonday.floor(new Date()), -1)
 ```
 
 ```js

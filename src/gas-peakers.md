@@ -136,7 +136,7 @@ const dispatchViewMode = width < MIN_FACET_WIDTH
 ```
 
 ```js
-const selectedDatePeaker = view(Inputs.date({label: dispatchViewMode === "Day" ? "Select date" : "Select week (any day)", value: lastDayPrevMonth}))
+const selectedDatePeaker = view(Inputs.date({label: dispatchViewMode === "Day" ? "Select date" : "Select week (any day)", value: lastFullWeek}))
 ```
 
 ```js
